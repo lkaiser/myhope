@@ -100,7 +100,7 @@ if __name__ == '__main__':
    tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'),15,"20",2+5-3))
    tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'), 25, "50",1+7-2))
    redis.set("tradehis",tradehis)
-   print redis.get("tradehis")
+   #print redis.get("tradehis")
 
    # config = ConfigParser.ConfigParser()
    # config.readfp(open('constants.ini'))

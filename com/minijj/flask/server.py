@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import time
 import json
 
 from flask import render_template
@@ -95,10 +96,18 @@ def admin():
     lowercreate = redis.get(constants.lower_basic_create_key)
     orders = redis.get(constants.trade_his_key)
     orders.reverse()
+    now = datetime.datetime.now() -datetime.timedelta(hours=24)
+    count = 0
+    for od in orders:
+        if now < datetime.datetime.strptime(od[0],'%Y-%m-%d %H:%M:%S'):
+            if od[4] < 0:
+                count +=1
+        else:
+            break
     orders = orders[0:30]
     print constants.trade_his_key
     print orders
-    return render_template('admin.html',main=str(main),buy=str(buy),sell=str(sell),holdh=redis.get(constants.coin_skey + 'higher'),holdl=redis.get(constants.coin_skey + 'lower'),orders=orders,lowercreate = lowercreate)
+    return render_template('admin.html',main=str(main),buy=str(buy),sell=str(sell),holdh=redis.get(constants.coin_skey + 'higher'),holdl=redis.get(constants.coin_skey + 'lower'),orders=orders,lowercreate = lowercreate,sum=count)
 
 @app.route('/setting')
 @login_required
@@ -227,6 +236,9 @@ class CJsonEncoder(json.JSONEncoder):
         else:
             return json.JSONEncoder.default(self, obj)
 
+@app.template_filter('sub')
+def sub(l, start, end):
+    return l[start:end]
 if __name__ == '__main__':
     #dif.run()
     from werkzeug.contrib.fixers import ProxyFix

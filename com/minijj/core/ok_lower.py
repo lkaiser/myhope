@@ -264,6 +264,7 @@ class TradeMexAndOk(object):
                     logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.mex_bids_price))
                     #logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
                     logger.info( "################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
+                    logger.info(self.conn.get(self.slipkey))
                     self.mexliquidation.suborder(okprice,sell_price,amount_change,self.expected_profit,self.basis_create,'sell')
 
                     #self.basis_create = now_create - 5
@@ -330,7 +331,6 @@ class TradeMexAndOk(object):
                 self.split_position.reverse()
                 self.conn.set(self.slipkey, self.split_position)
                 logger.info("################mex ammout 增加了"+bytes(amount)+"，持仓变化如下 #######################")
-                logger.info(self.conn.get(self.slipkey))
             else:
                 logger.info("################mex ammout 减少了" + bytes(amount) + "，持仓变化如下 #######################")
             self.balancelock.release()

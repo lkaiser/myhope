@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 {% block head %}
 {{super()}}
+<style type="text/css">
+    .smaller{
+        padding:1px
+    }
+    .smaller td{
+        padding:3px !important;
+    }
+    .even{
+        color:green;
+    }
+    .odd{
+        color:red;
+    }
+
+
+
+</style>
 <script type="text/javascript">
 $(document).ready(function() {
     $('#main,#buy,#sell').click(function(){
@@ -64,12 +81,13 @@ $(document).ready(function() {
                         </div>
                         <!-- /.panel-heading -->
                         <div class="row">
-                        <div class="col-lg-12">
-                            <div class="list-group">
-                                <div class="form-group">
-                                    <p>lower {{lowercreate}}</p>
-                                </div>
-                            </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <p>24小时成交 {{sum}}</p>
+                            <!-- /.list-group -->
+                        </div>
+                            <div class="col-lg-3 col-md-6">
+                            <p>lower {{lowercreate}}</p>
                             <!-- /.list-group -->
                         </div>
                             </div>
@@ -87,21 +105,30 @@ $(document).ready(function() {
                         </div>
                         <!-- /.panel-heading -->
                         <div class="row">
-                        <div class="col-lg-12">
-                            <div class="list-group">
-                                <div class="form-group">
-                                    <p>
-                                        {%for order in orders%}
-                                        {% if order[4] >0 %}
-                                         <font color="red">时间{{order[0]}}     OK成交价{{order[2]|round(1)}}    mex成交价{{order[3]|round(1)}}    成交量{{order[4]}}  滑点{{order[6]|round(1)}} </font><br>
-                                        {% else %}
-                                        <font color="green">时间{{order[0]}}     OK成交价{{order[2]|round(1)}}    mex成交价{{order[3]|round(1)}}    成交量{{order[4]}}  滑点{{order[6]|round(1)}} </font><br>
-                                        {% endif %}
-                                        {% endfor %} </p>
-                                </div>
-                            </div>
-                            <!-- /.list-group -->
-                        </div>
+                            <div class="col-sm-12"><table class="table table-striped table-bordered table-hover dataTable no-footer dtr-inline" id="dataTables-example" role="grid" aria-describedby="dataTables-example_info" style="width: 100%;" width="100%">
+                                <thead>
+                                    <tr role="row">
+                                        <th tabindex="0" aria-controls="dataTables-example">时间</th>
+                                        <th tabindex="0" aria-controls="dataTables-example">okcoin</th>
+                                        <th tabindex="0">mex</th>
+                                        <th tabindex="0">成交量</th>
+                                        <th tabindex="0">滑点</th>
+                                        <th tabindex="0" aria-controls="dataTables-example">diff</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {%for order in orders%}
+                                 <tr class="smaller {% if order[4] >0 %}odd{% else %}even{% endif %}" role="row">
+                                        <td>{{order[0]| sub(5,19)}}</td>
+                                        <td>{{order[2]|round(1)}} </td>
+                                        <td>{{order[3]|round(1)}}</td>
+                                        <td class="center">{{order[4]}}</td>
+                                        <td class="center">{{order[6]|round(1)}}</td>
+                                     <td>{{order[5]|round(1)}}</td>
+                                    </tr>
+                                 {% endfor %}
+                                </tbody>
+                            </table></div>
                             </div>
                         <!-- /.panel-body -->
                     </div>
