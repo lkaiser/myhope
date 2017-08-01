@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="page-wrapper" style="min-height: 309px;">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">运行参数设置</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            ok_lower 设置
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <form role="form">
+                                        <div class="form-group">
+                                            <label>lower_max_size</label>
+                                            <input class="form-control" name="lower_max_size">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>lower_deal_amount</label>
+                                            <input class="form-control" name="lower_deal_amount">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>lower_expected_profit</label>
+                                            <input class="form-control" name="lower_expected_profit">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>lower_basis_create</label>
+                                            <input class="form-control" name="lower_basis_create">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>lower_step_price</label>
+                                            <input class="form-control" name="lower_step_price">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>lower_contract_type</label>
+                                            <input class="form-control" name="lower_contract_type">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>lower_mex_contract_type</label>
+                                            <input class="form-control" name="lower_mex_contract_type">
+                                        </div>
+                                        <div class="form-group">
+                                            <button type="submit" class="btn btn-default">修改</button>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_max_size</label>
+                                            <input class="form-control" name="higher_max_size">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_deal_amount</label>
+                                            <input class="form-control" name="higher_deal_amount">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_expected_profit</label>
+                                            <input class="form-control" name="higher_expected_profit">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_basis_create</label>
+                                            <input class="form-control" name="higher_basis_create">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_step_price</label>
+                                            <input class="form-control" name="higher_step_price">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_contract_type</label>
+                                            <input class="form-control" name="higher_contract_type">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_mex_contract_type</label>
+                                            <input class="form-control" name="higher_mex_contract_type">
+                                        </div>
+                                        <div class="form-group">
+                                            <button type="submit" class="btn btn-default">修改</button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                            </div>
+                            <!-- /.row (nested) -->
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+        </div>
+{% endblock %}

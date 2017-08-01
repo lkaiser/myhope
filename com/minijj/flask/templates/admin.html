@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block head %}
+{{super()}}
+<script type="text/javascript">
+$(document).ready(function() {
+    $('#main,#buy,#sell').click(function(){
+        var self = this;
+        var id = $(this).attr("id");
+        $.get("/threadctl/"+id,function(data){
+            if("False" == data) {
+                $(self).addClass("btn-warning")
+                $(self).html("暂停")
+                $(self).removeClass("btn-success")
+            }else {
+                $(self).removeClass("btn-warning")
+                $(self).html("运行中")
+                $(self).addClass("btn-success")
+            }
+        })
+    });
+});
+</script>
+{% endblock %}
+{% block content %}
+<div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">概况</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> 当前持仓分布
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="row">
+                        <div class="col-lg-12">
+                            <div class="list-group">
+                                <div class="form-group">
+                                    <p>Higher {{holdh}}</p>
+                                </div>
+                                <div class="form-group">
+                                    <p>Lower {{holdl}}</p>
+                                </div>
+                            </div>
+                            <!-- /.list-group -->
+                        </div>
+                            </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                    <!-- /.panel .chat-panel -->
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> basic_create
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="row">
+                        <div class="col-lg-12">
+                            <div class="list-group">
+                                <div class="form-group">
+                                    <p>lower {{lowercreate}}</p>
+                                </div>
+                            </div>
+                            <!-- /.list-group -->
+                        </div>
+                            </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                    <!-- /.panel .chat-panel -->
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> 成交订单
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="row">
+                        <div class="col-lg-12">
+                            <div class="list-group">
+                                <div class="form-group">
+                                    <p>
+                                        {%for order in orders%}
+                                        {% if order[4] >0 %}
+                                         <font color="red">时间{{order[0]}}     OK成交价{{order[2]|round(1)}}    mex成交价{{order[3]|round(1)}}    成交量{{order[4]}}  滑点{{order[6]|round(1)}} </font><br>
+                                        {% else %}
+                                        <font color="green">时间{{order[0]}}     OK成交价{{order[2]|round(1)}}    mex成交价{{order[3]|round(1)}}    成交量{{order[4]}}  滑点{{order[6]|round(1)}} </font><br>
+                                        {% endif %}
+                                        {% endfor %} </p>
+                                </div>
+                            </div>
+                            <!-- /.list-group -->
+                        </div>
+                            </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                    <!-- /.panel .chat-panel -->
+                </div>
+            </div>
+            <!-- /.row -->
+            <div class="row">
+
+                <!-- /.col-lg-8 -->
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Lower进程状态
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="row">
+                        <div class="col-lg-12">
+                            <div class="list-group">
+                                <div class="form-group">
+                                    主进程 {% if main=="True" %}<button type="button" class="pull-right btn btn-success" id="main">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="main">暂停</button>{% endif %}
+                                </div>
+                                <div class="form-group">
+                                    开仓进程{% if sell=="True" %}<button type="button" class="pull-right btn btn-success" id="sell">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="sell">暂停</button>{% endif %}
+                                </div>
+                                <div class="form-group">
+                                    平仓进程{% if buy=="True" %}<button type="button" class="pull-right btn btn-success" id="buy">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="buy">暂停</button>{% endif %}
+                                </div>
+                            </div>
+                            <!-- /.list-group -->
+                        </div>
+                            </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                    <!-- /.panel .chat-panel -->
+                </div>
+                <!-- /.col-lg-4 -->
+            </div>
+            <!-- /.row -->
+        </div>
+{% endblock %}
