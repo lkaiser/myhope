@@ -165,11 +165,11 @@ class mexliquidation(object):
                                             rst['avgPx'], order[2], order[4], order[0] - rst['avgPx'] - order[4]))
                                 self.conn.set(constants.trade_his_key, his)
                             else:
-                                logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(rst['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] + order[4] - order[0] + rst['avgPx']) + " #######")
+                                logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(rst['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] - order[4] + order[0] - rst['avgPx']) + " #######")
                                 his = self.conn.get(constants.trade_his_key)
                                 his.append(
                                     (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 2, order[0], rst['avgPx'],
-                                     order[2], order[4], order[3] + order[4] - order[0] + rst['avgPx']))
+                                     order[2], order[4], order[3] - order[4] + order[0] - rst['avgPx']))
                                 self.conn.set(constants.trade_his_key, his)
                             break
                         else:
@@ -192,12 +192,12 @@ class mexliquidation(object):
                                                 rst['avgPx'], order[2], order[4], order[0] - rst['avgPx'] - order[4]))
                                     self.conn.set(constants.trade_his_key, his)
                                 else:
-                                    logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(rst['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] + order[4] - order[0] + rst['avgPx']) + " #######")
+                                    logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(rst['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] - order[4] + order[0] - rst['avgPx']) + " #######")
                                     his = self.conn.get(constants.trade_his_key)
                                     his.append(
                                         (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 2, order[0],
                                          rst['avgPx'],
-                                         order[2], order[4], order[3] + order[4] - order[0] + rst['avgPx']))
+                                         order[2], order[4], order[3] - order[4] + order[0] - rst['avgPx']))
                                     self.conn.set(constants.trade_his_key, his)
                                 break
                             #应该还有部分成交的情形

@@ -20,7 +20,7 @@
 </style>
 <script type="text/javascript">
 $(document).ready(function() {
-    $('#main,#buy,#sell').click(function(){
+    $('#main,#main2,#buy,#buy2,#sell,#sell2').click(function(){
         var self = this;
         var id = $(this).attr("id");
         $.get("/threadctl/"+id,function(data){
@@ -82,12 +82,16 @@ $(document).ready(function() {
                         <!-- /.panel-heading -->
                         <div class="row">
 
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-3 col-md-3">
                             <p>24小时成交 {{sum}}</p>
                             <!-- /.list-group -->
                         </div>
-                            <div class="col-lg-3 col-md-6">
+                            <div class="col-lg-3 col-md-3">
                             <p>lower {{lowercreate}}</p>
+                            <!-- /.list-group -->
+                        </div>
+                            <div class="col-lg-3 col-md-3">
+                            <p>higher {{highercreate}}</p>
                             <!-- /.list-group -->
                         </div>
                             </div>
@@ -119,7 +123,7 @@ $(document).ready(function() {
                                 <tbody>
                                 {%for order in orders%}
                                  <tr class="smaller {% if order[4] >0 %}odd{% else %}even{% endif %}" role="row">
-                                        <td>{{order[0]| sub(5,19)}}</td>
+                                        <td>{% if order[1] == 1 and order[4] <0 or order[1] == 2 and order[4] >0 %}L {% else %}H {% endif %}{{order[0]| sub(5,19)}}</td>
                                         <td>{{order[2]|round(1)}} </td>
                                         <td>{{order[3]|round(1)}}</td>
                                         <td class="center">{{order[4]}}</td>
@@ -157,6 +161,38 @@ $(document).ready(function() {
                                 </div>
                                 <div class="form-group">
                                     平仓进程{% if buy=="True" %}<button type="button" class="pull-right btn btn-success" id="buy">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="buy">暂停</button>{% endif %}
+                                </div>
+                            </div>
+                            <!-- /.list-group -->
+                        </div>
+                            </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                    <!-- /.panel .chat-panel -->
+                </div>
+                <!-- /.col-lg-4 -->
+            </div>
+            <div class="row">
+
+                <!-- /.col-lg-8 -->
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Higher进程状态
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="row">
+                        <div class="col-lg-12">
+                            <div class="list-group">
+                                <div class="form-group">
+                                    主进程 {% if main2=="True" %}<button type="button" class="pull-right btn btn-success" id="main2">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="main2">暂停</button>{% endif %}
+                                </div>
+                                <div class="form-group">
+                                    开仓进程{% if sell2=="True" %}<button type="button" class="pull-right btn btn-success" id="sell2">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="sell2">暂停</button>{% endif %}
+                                </div>
+                                <div class="form-group">
+                                    平仓进程{% if buy2=="True" %}<button type="button" class="pull-right btn btn-success" id="buy2">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="buy2">暂停</button>{% endif %}
                                 </div>
                             </div>
                             <!-- /.list-group -->

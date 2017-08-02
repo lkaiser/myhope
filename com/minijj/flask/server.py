@@ -7,6 +7,7 @@ from flask import render_template
 from flask import Flask
 from flask import request
 from flask import session
+from form.settingForm import settingForm
 import flask
 
 from flask_login import (LoginManager, login_required, login_user,
@@ -16,7 +17,7 @@ import sys
 import os
 parentpath = os.path.dirname(sys.path[0])
 
-print "#########parentpath=",parentpath
+#print "#########parentpath=",parentpath
 sys.path.append(parentpath)
 
 import bit.constants as constants
@@ -26,6 +27,7 @@ from bit.db import rediscon
 
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'hard to guess string'
 redis = rediscon.Conn_db()
 #okcoin = okcom.OkCoinComApi(constants.coin_key, constants.coin_skey)
 #dif = diff.Diff(50,3600)
@@ -93,7 +95,13 @@ def admin():
     main = redis.get(constants.lower_main_run_key)
     buy = redis.get(constants.lower_buy_run_key)
     sell = redis.get(constants.lower_sell_run_key)
+
+    main2 = redis.get(constants.higher_main_run_key)
+    buy2 = redis.get(constants.higher_buy_run_key)
+    sell2 = redis.get(constants.higher_sell_run_key)
+
     lowercreate = redis.get(constants.lower_basic_create_key)
+    highercreate = redis.get(constants.higher_basic_create_key)
     orders = redis.get(constants.trade_his_key)
     orders.reverse()
     now = datetime.datetime.now() -datetime.timedelta(hours=24)
@@ -101,15 +109,13 @@ def admin():
     for od in orders:
         if now < datetime.datetime.strptime(od[0],'%Y-%m-%d %H:%M:%S'):
             if od[4] < 0:
-                count +=1
+                count -= od[4]
         else:
             break
     orders = orders[0:30]
-    print constants.trade_his_key
-    print orders
-    return render_template('admin.html',main=str(main),buy=str(buy),sell=str(sell),holdh=redis.get(constants.coin_skey + 'higher'),holdl=redis.get(constants.coin_skey + 'lower'),orders=orders,lowercreate = lowercreate,sum=count)
+    return render_template('admin.html',main=str(main),buy=str(buy),sell=str(sell),main2=str(main2),buy2=str(buy2),sell2=str(sell2),holdh=redis.get(constants.coin_skey + 'higher'),holdl=redis.get(constants.coin_skey + 'lower'),orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count)
 
-@app.route('/setting')
+@app.route('/setting' , methods=['GET', 'POST'])
 @login_required
 def setting():
     #execfile
@@ -117,8 +123,34 @@ def setting():
     #os.system("python filename")
     #--注：filename最好是全路径 + 文件名，python在环境变量中（linux就没这个问题了）
     #http://www.cnblogs.com/bergus/p/4811291.html
-    return render_template('setting.html')
+    form = settingForm()
 
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            constants.update(form)
+            print "############aaa"
+            print constants.lower_basis_create
+            os.system('ls -l *')
+        else:
+            print "##########wtf"
+        return render_template('setting.html',form=form)
+    else:
+        form.lower_max_size.data = constants.lower_max_size
+        form.lower_deal_amount.data = constants.lower_deal_amount
+        form.lower_expected_profit.data = constants.lower_expected_profit
+        form.lower_basis_create.data = redis.get(constants.lower_basic_create_key)
+        form.lower_step_price.data = constants.lower_step_price
+        form.lower_contract_type.data = constants.lower_contract_type
+        form.lower_mex_contract_type.data = constants.lower_mex_contract_type
+        form.higher_max_size.data = constants.higher_max_size
+        form.higher_deal_amount.data = constants.higher_max_size
+        form.higher_expected_profit.data = constants.higher_expected_profit
+        form.higher_basis_create.data = constants.higher_basis_create
+        form.higher_step_price.data = constants.higher_step_price
+        form.higher_contract_type.data = constants.higher_contract_type
+        form.higher_mex_contract_type.data = constants.higher_mex_contract_type
+        return render_template('setting.html',form=form)
+    return render_template('setting.html',)
 @app.route('/threadctl/<thread>')
 @login_required
 def threadctl(thread):
@@ -133,6 +165,18 @@ def threadctl(thread):
     if "sell" == thread:
         key = redis.get(constants.lower_sell_run_key)
         redis.set(constants.lower_sell_run_key,not key)
+        return str(not key)
+    if "main2" == thread:
+        key = redis.get(constants.higher_main_run_key)
+        redis.set(constants.higher_main_run_key,not key)
+        return str(not key)
+    if "buy2" == thread:
+        key = redis.get(constants.higher_buy_run_key)
+        redis.set(constants.higher_buy_run_key,not key)
+        return str(not key)
+    if "sell2" == thread:
+        key = redis.get(constants.higher_sell_run_key)
+        redis.set(constants.higher_sell_run_key,not key)
         return str(not key)
 
 

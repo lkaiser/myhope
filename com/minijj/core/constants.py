@@ -17,6 +17,7 @@ mex_skey = config.get("all", "mex_skey")
 
 trade_his_key = config.get("all", "trade_his_key")
 lower_basic_create_key = config.get("all", "lower_basic_create_key")
+higher_basic_create_key = config.get("all", "higher_basic_create_key")
 
 lower_sell_run_key = config.get("all", "lower_sell_run_key")
 lower_buy_run_key = config.get("all", "lower_buy_run_key")

@@ -14,71 +14,95 @@
                         <div class="panel-heading">
                             ok_lower 设置
                         </div>
+                        {% macro render_field(field) %}
+  {% if field.errors %}
+    <ul class=errors>
+    {% for error in field.errors %}
+      <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+  </dd>
+{% endmacro %}
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-lg-12">
-                                    <form role="form">
+                                    <form role="form" method="POST">
+                                        {{ form.csrf_token }}
+                                        {{ render_field(form.csrf_token) }}
                                         <div class="form-group">
                                             <label>lower_max_size</label>
-                                            <input class="form-control" name="lower_max_size">
+                                            {{ form.lower_max_size(class='form-control')}}
+                                            {{ render_field(form.lower_max_size) }}
                                         </div>
                                         <div class="form-group">
                                             <label>lower_deal_amount</label>
-                                            <input class="form-control" name="lower_deal_amount">
+                                            {{ form.lower_deal_amount(class='form-control')}}
+                                            {{ render_field(form.lower_deal_amount) }}
                                         </div>
                                         <div class="form-group">
                                             <label>lower_expected_profit</label>
-                                            <input class="form-control" name="lower_expected_profit">
+                                            {{ form.lower_expected_profit(class='form-control')}}
+                                            {{ render_field(form.lower_expected_profit) }}
                                         </div>
                                         <div class="form-group">
                                             <label>lower_basis_create</label>
-                                            <input class="form-control" name="lower_basis_create">
+                                            {{ form.lower_basis_create(class='form-control')}}
+                                            {{ render_field(form.lower_basis_create) }}
                                         </div>
                                         <div class="form-group">
                                             <label>lower_step_price</label>
-                                            <input class="form-control" name="lower_step_price">
+                                            {{ form.lower_step_price(class='form-control')}}
+                                            {{ render_field(form.lower_step_price) }}
                                         </div>
                                         <div class="form-group">
                                             <label>lower_contract_type</label>
-                                            <input class="form-control" name="lower_contract_type">
+                                            {{ form.lower_contract_type(class='form-control')}}
+                                            {{ render_field(form.lower_contract_type) }}
                                         </div>
                                         <div class="form-group">
                                             <label>lower_mex_contract_type</label>
-                                            <input class="form-control" name="lower_mex_contract_type">
-                                        </div>
-                                        <div class="form-group">
-                                            <button type="submit" class="btn btn-default">修改</button>
+                                            {{ form.lower_mex_contract_type(class='form-control')}}
+                                            {{ render_field(form.lower_mex_contract_type) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_max_size</label>
-                                            <input class="form-control" name="higher_max_size">
+                                            {{ form.higher_max_size(class='form-control')}}
+                                            {{ render_field(form.higher_max_size) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_deal_amount</label>
-                                            <input class="form-control" name="higher_deal_amount">
+                                            {{ form.higher_deal_amount(class='form-control')}}
+                                            {{ render_field(form.higher_deal_amount) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_expected_profit</label>
-                                            <input class="form-control" name="higher_expected_profit">
+                                            {{ form.higher_expected_profit(class='form-control')}}
+                                            {{ render_field(form.higher_expected_profit) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_basis_create</label>
-                                            <input class="form-control" name="higher_basis_create">
+                                            {{ form.higher_basis_create(class='form-control')}}
+                                            {{ render_field(form.higher_basis_create) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_step_price</label>
-                                            <input class="form-control" name="higher_step_price">
+                                            {{ form.higher_step_price(class='form-control')}}
+                                            {{ render_field(form.higher_contract_type) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_contract_type</label>
-                                            <input class="form-control" name="higher_contract_type">
+                                            {{ form.higher_contract_type(class='form-control')}}
+                                            {{ render_field(form.higher_contract_type) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_mex_contract_type</label>
-                                            <input class="form-control" name="higher_mex_contract_type">
+                                            {{ form.higher_mex_contract_type(class='form-control')}}
+                                            {{ render_field(form.higher_mex_contract_type) }}
                                         </div>
                                         <div class="form-group">
-                                            <button type="submit" class="btn btn-default">修改</button>
+                                            {{ form.submit}}
+                                            {{ render_field(form.submit) }}
                                         </div>
                                     </form>
                                 </div>
