@@ -41,7 +41,7 @@ class TradeMexAndOk(object):
         self.mex = bmext
         self.contract_type = contract_type
         self.okcoin = okcom.OkCoinComApi(key, skey)
-        self.okcoin.cancel_all('quarter')
+        self.okcoin.cancel_all(self.contract_type)
         self._mex = bitmex_api.Bitmex(mex_skey,mex_key)
         self.ws = websocket.WebSocket()
 
@@ -237,7 +237,7 @@ class TradeMexAndOk(object):
             runmain = self.conn.get(constants.lower_main_run_key)
             print "##############what the fuck",runmain
             if not runmain:
-                logger.info("###############position suspend##################")
+                logger.info("###############lower position suspend##################")
                 time.sleep(2)
                 continue
 
@@ -264,7 +264,7 @@ class TradeMexAndOk(object):
                     logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.mex_bids_price))
                     #logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
                     logger.info( "################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                    logger.info(self.conn.get(self.slipkey))
+                    #logger.info(self.conn.get(self.slipkey))
                     self.mexliquidation.suborder(okprice,sell_price,amount_change,self.expected_profit,self.basis_create,'sell')
 
                     #self.basis_create = now_create - 5
