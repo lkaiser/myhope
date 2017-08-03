@@ -2,12 +2,12 @@
 import datetime
 import threading
 
-import sys
-import os
-parentpath = os.path.dirname(sys.path[0])
-sys.path.append(parentpath)
+#import sys
+#import os
+#parentpath = os.path.dirname(sys.path[0])
+#sys.path.append(parentpath)
 
-from bit.db import db
+from core.db import db
 
 
 

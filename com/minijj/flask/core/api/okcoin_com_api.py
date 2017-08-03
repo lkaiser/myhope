@@ -22,7 +22,6 @@ class OkCoinComApi(object):
     def get_rate(self):
         url = 'https://www.okcoin.com/api/v1/exchange_rate.do'
         req = requests.get(url, headers=self.headers, timeout=self.timeout)
-        print req
         return req.json()['rate']
 
     def get_depth(self, contract_type):
@@ -97,7 +96,7 @@ class OkCoinComApi(object):
         p = dict()
         p['api_key'] = self.api_key
         p['symbol'] = 'btc_usd'
-        p['contract_type'] = contract_type
+        p['contract_type'] = 'quarter'
         p['status'] = '1'
         p['order_id'] = '-1'
         p['current_page'] = '1'
@@ -184,8 +183,9 @@ class OkCoinComApi(object):
         p['status'] = '2'
         p['order_id'] = '-1'
         p['current_page'] = '0'
-        p['page_length'] = '50'
+        p['page_length'] = '10'
         p['sign'] = self.sign(p)
+        #print p
         req = requests.post(url, headers=self.headers, params=p,timeout=self.timeout)
         return req.json()
 

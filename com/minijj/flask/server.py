@@ -15,14 +15,14 @@ from flask_login import (LoginManager, login_required, login_user,
 
 import sys
 import os
-parentpath = os.path.dirname(sys.path[0])
+#parentpath = os.path.dirname(sys.path[0])
 
 #print "#########parentpath=",parentpath
-sys.path.append(parentpath)
+#sys.path.append(parentpath)
 
-import bit.constants as constants
-from bit.db import db
-from bit.db import rediscon
+import core.constants as constants
+from core.db import db
+from core.db import rediscon
 
 
 
@@ -130,7 +130,7 @@ def setting():
             constants.update(form)
             print "############aaa"
             print constants.lower_basis_create
-            os.system('ls -l *')
+            #os.system('ls -l *')
         else:
             print "##########wtf"
         return render_template('setting.html',form=form)
@@ -143,7 +143,7 @@ def setting():
         form.lower_contract_type.data = constants.lower_contract_type
         form.lower_mex_contract_type.data = constants.lower_mex_contract_type
         form.higher_max_size.data = constants.higher_max_size
-        form.higher_deal_amount.data = constants.higher_max_size
+        form.higher_deal_amount.data = constants.higher_deal_amount
         form.higher_expected_profit.data = constants.higher_expected_profit
         form.higher_basis_create.data = constants.higher_basis_create
         form.higher_step_price.data = constants.higher_step_price
@@ -178,6 +178,23 @@ def threadctl(thread):
         key = redis.get(constants.higher_sell_run_key)
         redis.set(constants.higher_sell_run_key,not key)
         return str(not key)
+
+    if "server" == thread:
+        key = redis.get(constants.lower_server)
+        if key:
+            redis.set(constants.lowerer_server, False)
+            return str(False)
+        else:
+            os.system('nohup python test.py &')
+            return str(True)
+    if "server2" == thread:
+        key = redis.get(constants.higher_server)
+        if key:
+            redis.set(constants.higher_server, False)
+            return str(False)
+        else:
+            os.system('nohup python test.py &')
+            return str(True)
 
 
 @app.route('/recent10m/')

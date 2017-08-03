@@ -11,10 +11,10 @@ import dataStore
 
 import sys
 import os
-parentpath = os.path.dirname(sys.path[0])
-sys.path.append(parentpath)
+#parentpath = os.path.dirname(sys.path[0])
+#sys.path.append(parentpath)
 
-from bit.db import rediscon
+from core.db import rediscon
 
 
 class CycleList(object):
