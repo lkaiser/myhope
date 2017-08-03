@@ -301,9 +301,11 @@ class TradeMexAndOk(object):
                     self.amountsigal +=1
                 init_holding = new_holding
                 if amount_change>0:
+                    #logger.info("################basic_create=" + bytes(self.basis_create) + " ammount_change="+bytes(amount_change)+" deal_amount="+bytes(self.deal_amount)+" step_price="+bytes(self.step_price)+" ##############")
                     self.basis_create += float(amount_change) / float(self.deal_amount) * float(self.step_price)
                     self.conn.set(constants.higher_basic_create_key, self.basis_create)
                 if amount_change<0:
+                    #logger.info("################basic_create=" + bytes(self.basis_create) + " ammount_change=" + bytes(amount_change) + " deal_amount=" + bytes(self.deal_amount) + " step_price=" + bytes(self.step_price) + " ##############")
                     self.basis_create += float(amount_change) / float(self.deal_amount) * float(self.step_price)*1.1  # okcoin每开成一多单,create 就上升 1.5/deal_amount,可以理解为价差在继续拉大,扩大下一次开单价差获取更大利差空间
                     self.conn.set(constants.higher_basic_create_key, self.basis_create)
             except Exception, e:

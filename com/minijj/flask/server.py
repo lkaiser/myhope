@@ -138,20 +138,21 @@ def setting():
             print "##########wtf"
         return render_template('setting.html',form=form)
     else:
-        form.lower_max_size.data = constants.lower_max_size
-        form.lower_deal_amount.data = constants.lower_deal_amount
-        form.lower_expected_profit.data = constants.lower_expected_profit
+        config = constants.getCfg()
+        form.lower_max_size.data = config.get("all","lower_max_size")
+        form.lower_deal_amount.data = config.get("all","lower_deal_amount")
+        form.lower_expected_profit.data = config.get("all","lower_expected_profit")
         form.lower_basis_create.data = redis.get(constants.lower_basic_create_key)
-        form.lower_step_price.data = constants.lower_step_price
-        form.lower_contract_type.data = constants.lower_contract_type
-        form.lower_mex_contract_type.data = constants.lower_mex_contract_type
-        form.higher_max_size.data = constants.higher_max_size
-        form.higher_deal_amount.data = constants.higher_deal_amount
-        form.higher_expected_profit.data = constants.higher_expected_profit
-        form.higher_basis_create.data = constants.higher_basis_create
-        form.higher_step_price.data = constants.higher_step_price
-        form.higher_contract_type.data = constants.higher_contract_type
-        form.higher_mex_contract_type.data = constants.higher_mex_contract_type
+        form.lower_step_price.data = config.get("all","lower_step_price")
+        form.lower_contract_type.data = config.get("all","lower_contract_type")
+        form.lower_mex_contract_type.data = config.get("all","lower_mex_contract_type")
+        form.higher_max_size.data = config.get("all","higher_max_size")
+        form.higher_deal_amount.data = config.get("all","higher_deal_amount")
+        form.higher_expected_profit.data = config.get("all","higher_expected_profit")
+        form.higher_basis_create.data = config.get("all","higher_basis_create")
+        form.higher_step_price.data = config.get("all","higher_step_price")#redis.get(higher_basic_create_key)
+        form.higher_contract_type.data = config.get("all","higher_contract_type")
+        form.higher_mex_contract_type.data = config.get("all","higher_mex_contract_type")
         return render_template('setting.html',form=form)
     return render_template('setting.html',)
 @app.route('/threadctl/<thread>')
