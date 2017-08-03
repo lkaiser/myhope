@@ -82,7 +82,7 @@ def logout():
 @app.route('/')
 @login_required
 def hello_world():
-    return render_template('index.html')
+    return flask.redirect(flask.url_for('admin'))
 
 @app.route('/chart')
 @login_required

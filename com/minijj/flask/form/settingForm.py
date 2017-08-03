@@ -5,7 +5,6 @@ parentpath = os.path.dirname(sys.path[0])
 #print "#########parentpath=",parentpath
 sys.path.append(parentpath)
 
-import bit.constants as constants
 from flask_wtf import Form
 from wtforms import StringField, FloatField,SubmitField,IntegerField
 from wtforms.validators import Required
