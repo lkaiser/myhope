@@ -16,7 +16,11 @@ from api import bitmex_api
 from db.rediscon import Conn_db
 from market_maker import bitmex
 
-LOG_FILE = 'high.log'
+import sys
+import os
+#parentpath = os.path.dirname(sys.path[0])
+
+LOG_FILE = sys.path[0]+'/high.log'
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes = 1024*1024*4, backupCount = 10) # 实例化handler
 fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
 
@@ -26,6 +30,7 @@ handler.setFormatter(formatter)  # 为handler添加formatter
 logger = logging.getLogger('tst')  # 获取名为tst的logger
 logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
+
 
 
 class TradeMexAndOk(object):
@@ -87,7 +92,8 @@ class TradeMexAndOk(object):
 
         #sys.exit(0)
 
-    #
+    def cancel_all(self):
+        self.okcoin.cancel_all(self.contract_type)
     def cal_order(self,okposition,mexposition):
         sposition = self.conn.get(self.slipkey)
         if not sposition:
@@ -545,9 +551,11 @@ buy.start()
 #splitposcheck.start()
 ping_thread.start()
 redis = Conn_db()
-redis.set(constants.lowerer_server,True)
+redis.set(constants.higher_server,True)
 status = True
 while status:
-    status = redis.get(constants.lowerer_server)
+    status = redis.get(constants.higher_server)
     time.sleep(2)
     pass
+logger.info("###I'm quit###########")
+t.cancel_all()

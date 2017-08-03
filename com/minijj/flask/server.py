@@ -95,10 +95,13 @@ def admin():
     main = redis.get(constants.lower_main_run_key)
     buy = redis.get(constants.lower_buy_run_key)
     sell = redis.get(constants.lower_sell_run_key)
+    server = redis.get(constants.lower_server)
 
     main2 = redis.get(constants.higher_main_run_key)
     buy2 = redis.get(constants.higher_buy_run_key)
     sell2 = redis.get(constants.higher_sell_run_key)
+    server2 = redis.get(constants.higher_server)
+
 
     lowercreate = redis.get(constants.lower_basic_create_key)
     highercreate = redis.get(constants.higher_basic_create_key)
@@ -113,7 +116,7 @@ def admin():
         else:
             break
     orders = orders[0:30]
-    return render_template('admin.html',main=str(main),buy=str(buy),sell=str(sell),main2=str(main2),buy2=str(buy2),sell2=str(sell2),holdh=redis.get(constants.coin_skey + 'higher'),holdl=redis.get(constants.coin_skey + 'lower'),orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count)
+    return render_template('admin.html',main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),holdh=redis.get(constants.coin_skey + 'higher'),holdl=redis.get(constants.coin_skey + 'lower'),orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count)
 
 @app.route('/setting' , methods=['GET', 'POST'])
 @login_required
@@ -185,7 +188,7 @@ def threadctl(thread):
             redis.set(constants.lowerer_server, False)
             return str(False)
         else:
-            os.system('nohup python test.py &')
+            os.system('nohup python core/ok_lower.py &')
             return str(True)
     if "server2" == thread:
         key = redis.get(constants.higher_server)
@@ -193,7 +196,7 @@ def threadctl(thread):
             redis.set(constants.higher_server, False)
             return str(False)
         else:
-            os.system('nohup python test.py &')
+            os.system('nohup python core/ok_higher.py &')
             return str(True)
 
 

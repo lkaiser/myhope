@@ -19,7 +19,7 @@ mex_skey = config.get("all", "mex_skey")
 trade_his_key = config.get("all", "trade_his_key")
 
 higher_server = "higher_server"
-lowerer_server = "lowerer_server"
+lower_server = "lower_server"
 
 lower_basic_create_key = config.get("all", "lower_basic_create_key")
 higher_basic_create_key = config.get("all", "higher_basic_create_key")

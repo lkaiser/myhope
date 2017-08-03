@@ -5,7 +5,9 @@ import datetime
 #print sys.path
 
 parentpath = os.path.dirname(sys.path[0])
-sys.path.append(parentpath)
+print sys.path[0]
+print parentpath
+#sys.path.append(parentpath)
 
 import logging.handlers
 LOG_FILE = 'test.log'
