@@ -6,7 +6,7 @@ import Queue
 import threading
 from db import rediscon
 import time
-import com.minijj.flask.constants as constants
+import constants as constants
 import api.okcoin_com_api as okcom
 
 import sys
@@ -111,6 +111,9 @@ if __name__ == '__main__':
    # config.write(open('constants.ini', "r+"))
    #print a
    test3.printcfg()
+
+   print "@@@@@@@@@2"
+   print bytes(constants.higher_back_distant)
 
    print sys.path
 

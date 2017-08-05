@@ -270,6 +270,8 @@ class TradeMexAndOk(object):
                     #logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
                     logger.info( "################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
                     #logger.info(self.conn.get(self.slipkey))
+                    self.basis_create -= float(amount_change) / float(self.deal_amount) * float(self.step_price)
+                    self.conn.set(constants.lower_basic_create_key, self.basis_create)
                     self.mexliquidation.suborder(okprice,sell_price,amount_change,self.expected_profit,self.basis_create,'sell')
 
                     #self.basis_create = now_create - 5
@@ -301,6 +303,8 @@ class TradeMexAndOk(object):
                         okprice = self.lastevenuprice
                         now_create = okprice - self.mex_asks_price
                         #self.basis_create = now_create - 8
+                        self.basis_create = now_create - constants.lower_back_distant
+                        self.conn.set(constants.lower_basic_create_key, self.basis_create)
                         self.balancelock.release()
                         logger.info("#####balancelock release")
 
@@ -310,12 +314,12 @@ class TradeMexAndOk(object):
                 else:
                     self.amountsigal +=1
                 init_holding = new_holding
-                if amount_change>0:
-                    self.basis_create -= float(amount_change) / float(self.deal_amount) * float(self.step_price)
-                    self.conn.set(constants.lower_basic_create_key,self.basis_create)
-                if amount_change<0:
-                    self.basis_create -= float(amount_change) / float(self.deal_amount) * float(self.step_price)*1.1  # okcoin每开成一多单,create 就上升 1.5/deal_amount,可以理解为价差在继续拉大,扩大下一次开单价差获取更大利差空间
-                    self.conn.set(constants.lower_basic_create_key, self.basis_create)
+                # if amount_change>0:
+                #     self.basis_create -= float(amount_change) / float(self.deal_amount) * float(self.step_price)
+                #     self.conn.set(constants.lower_basic_create_key,self.basis_create)
+                # if amount_change<0:
+                #     self.basis_create -= float(amount_change) / float(self.deal_amount) * float(self.step_price)*1.1  # okcoin每开成一多单,create 就上升 1.5/deal_amount,可以理解为价差在继续拉大,扩大下一次开单价差获取更大利差空间
+                #     self.conn.set(constants.lower_basic_create_key, self.basis_create)
 
             except Exception, e:
                 time.sleep(1.25)
