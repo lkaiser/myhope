@@ -6,7 +6,7 @@ parentpath = os.path.dirname(sys.path[0])
 sys.path.append(parentpath)
 
 from flask_wtf import Form
-from wtforms import StringField, FloatField,SubmitField,IntegerField
+from wtforms import StringField, FloatField,SubmitField,IntegerField,TextAreaField
 from wtforms.validators import Required
 
 class settingForm(Form):
@@ -18,6 +18,7 @@ class settingForm(Form):
     lower_step_price = FloatField("lower_step_price", validators=[Required()])
     lower_contract_type = StringField("lower_contract_type", validators=[Required()])
     lower_mex_contract_type = StringField("lower_mex_contract_type", validators=[Required()])
+    lower_split_position = TextAreaField("lower_split_position")
 
     higher_max_size = IntegerField("higher_max_size", validators=[Required()])
     higher_deal_amount = IntegerField("higher_deal_amount", validators=[Required()])
@@ -27,4 +28,5 @@ class settingForm(Form):
     higher_step_price = FloatField("higher_step_price", validators=[Required()])
     higher_contract_type = StringField("higher_contract_type", validators=[Required()])
     higher_mex_contract_type = StringField("higher_mex_contract_type", validators=[Required()])
+    higher_split_position = TextAreaField("higher_split_position")
     submit = SubmitField('Submit')

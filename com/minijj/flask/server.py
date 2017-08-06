@@ -130,9 +130,22 @@ def setting():
 
     if request.method == 'POST':
         if form.validate_on_submit():
+            position = form.lower_split_position.data
+            if(position.strip() !=""):
+                lsplit_position = eval(position)
+                lsplit_position.sort(key=lambda x: x[1])
+                lsplit_position.reverse()
+                redis.set(constants.lower_split_position,lsplit_position)
+            else:
+                redis.set(constants.lower_split_position, [])
+            position = form.higher_split_position.data
+            if (position.strip() != ""):
+                hsplit_position = eval(position)
+                hsplit_position.sort(key=lambda x: x[1])
+                redis.set(constants.higher_split_position, hsplit_position)
+            else:
+                redis.set(constants.lower_split_position, [])
             constants.update(form)
-            print "############aaa"
-            print constants.lower_basis_create
             #os.system('ls -l *')
         else:
             print "##########wtf"
@@ -144,6 +157,7 @@ def setting():
         form.lower_expected_profit.data = config.get("all","lower_expected_profit")
         form.lower_back_distant.data = config.get("all", "lower_back_distant")
         form.lower_basis_create.data = redis.get(constants.lower_basic_create_key)
+        form.lower_split_position.data = redis.get(constants.lower_split_position)
         form.lower_step_price.data = config.get("all","lower_step_price")
         form.lower_contract_type.data = config.get("all","lower_contract_type")
         form.lower_mex_contract_type.data = config.get("all","lower_mex_contract_type")
@@ -152,6 +166,7 @@ def setting():
         form.higher_expected_profit.data = config.get("all","higher_expected_profit")
         form.higher_back_distant.data = config.get("all", "higher_back_distant")
         form.higher_basis_create.data = redis.get(constants.higher_basic_create_key)
+        form.higher_split_position.data = redis.get(constants.higher_split_position)
         form.higher_step_price.data = config.get("all","higher_step_price")#redis.get(higher_basic_create_key)
         form.higher_contract_type.data = config.get("all","higher_contract_type")
         form.higher_mex_contract_type.data = config.get("all","higher_mex_contract_type")
@@ -188,7 +203,7 @@ def threadctl(thread):
     if "server" == thread:
         key = redis.get(constants.lower_server)
         if key:
-            redis.set(constants.lowerer_server, False)
+            redis.set(constants.lower_server, False)
             return str(False)
         else:
             os.system('nohup python core/ok_lower.py &')

@@ -20,7 +20,7 @@ from market_maker import bitmex
 import sys
 import os
 
-LOG_FILE = sys.path[0]+'lower.log'
+LOG_FILE = sys.path[0]+'/lower.log'
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes = 1024*1024*4, backupCount = 10) # 实例化handler
 fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
 
@@ -78,7 +78,7 @@ class TradeMexAndOk(object):
         self.conn.set(constants.lower_sell_run_key,True)
         self.conn.set(constants.lower_main_run_key,True)
         self.conn.set(constants.lower_basic_create_key, self.basis_create)
-        self.slipkey = skey+"lower"
+        self.slipkey = constants.lower_split_position
         self.lastevenuprice = 0
         self.lastsub = datetime.datetime.now()
         self.sublock = threading.Lock()

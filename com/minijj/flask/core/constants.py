@@ -21,6 +21,9 @@ trade_his_key = config.get("all", "trade_his_key")
 higher_server = "higher_server"
 lower_server = "lower_server"
 
+higher_split_position = coin_skey + "higher"
+lower_split_position = coin_skey + "lower"
+
 lower_basic_create_key = config.get("all", "lower_basic_create_key")
 higher_basic_create_key = config.get("all", "higher_basic_create_key")
 

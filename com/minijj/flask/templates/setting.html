@@ -1,4 +1,12 @@
 {% extends "base.html" %}
+{% block head %}
+{{super()}}
+<style type="text/css">
+    .errors{
+        color:red
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div id="page-wrapper" style="min-height: 309px;">
             <div class="row">
@@ -61,6 +69,11 @@
                                             {{ render_field(form.lower_step_price) }}
                                         </div>
                                         <div class="form-group">
+                                            <label>lower_split_position</label>
+                                            {{ form.lower_split_position(class='form-control',rows='6')}}
+                                            {{ render_field(form.lower_split_position) }}
+                                        </div>
+                                        <div class="form-group">
                                             <label>lower_contract_type</label>
                                             {{ form.lower_contract_type(class='form-control')}}
                                             {{ render_field(form.lower_contract_type) }}
@@ -99,6 +112,11 @@
                                             <label>higher_step_price</label>
                                             {{ form.higher_step_price(class='form-control')}}
                                             {{ render_field(form.higher_contract_type) }}
+                                        </div>
+                                        <div class="form-group">
+                                            <label>higher_split_position</label>
+                                            {{ form.higher_split_position(class='form-control',rows='6')}}
+                                            {{ render_field(form.higher_split_position) }}
                                         </div>
                                         <div class="form-group">
                                             <label>higher_contract_type</label>

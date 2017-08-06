@@ -76,7 +76,7 @@ class TradeMexAndOk(object):
         self.conn.set(constants.higher_sell_run_key, True)
         self.conn.set(constants.higher_main_run_key, True)
         self.conn.set(constants.higher_basic_create_key, self.basis_create)
-        self.slipkey = skey + "higher"
+        self.slipkey = constants.higher_split_position
         self.lastevenuprice = 0
         self.lastsub = datetime.datetime.now()
         self.sublock = threading.Lock()
