@@ -91,36 +91,36 @@ class mexliquidation(object):
                             #logger.info("############"+bytes(order[4])+"以实际成交均价建仓滑点 " + bytes(rst['avgPx'] - order[1]) + " ##############")
                             break
                         else:
-                            waiting += 4
-                            time.sleep(1)
+                            waiting += 1
+                            time.sleep(2)
                             cel = self.mex.cancel(rst['orderID'])
                             logger.info(cel)
                             if 'Filled' == cel[0]['ordStatus']:
-                                self.server.plusUpdate(order[0],rst['avgPx'],order[2])
+                                self.server.plusUpdate(order[0],cel[0]['avgPx'],order[2])
                                 if order[2] > 0:
                                     logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(
-                                        rst['avgPx']) + "##amount="+bytes(order[2])+" ##basic_create=" + bytes(order[4]) + "建仓以持仓变化均价建仓滑点 " + bytes(
-                                        order[4] - order[0] + rst['avgPx']) + " #######")
+                                        cel[0]['avgPx']) + "##amount="+bytes(order[2])+" ##basic_create=" + bytes(order[4]) + "建仓以持仓变化均价建仓滑点 " + bytes(
+                                        order[4] - order[0] + cel[0]['avgPx']) + " #######")
 
                                     his = self.conn.get(constants.trade_his_key)
                                     his.append((datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 1, order[0],
-                                                rst['avgPx'], order[2], order[4], order[4] - order[0] + rst['avgPx']))
+                                                cel[0]['avgPx'], order[2], order[4], order[4] - order[0] + cel[0]['avgPx']))
                                     self.conn.set(constants.trade_his_key, his)
                                 else:
                                     logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(
-                                        rst['avgPx']) + "##amount="+bytes(order[2])+" ##basic_create=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] + order[4] - order[0] + rst['avgPx']) + " #######")
+                                        cel[0]['avgPx']) + "##amount="+bytes(order[2])+" ##basic_create=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] + order[4] - order[0] + cel[0]['avgPx']) + " #######")
 
-                                his = self.conn.get(constants.trade_his_key)
-                                his.append(
-                                    (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 1, order[0], rst['avgPx'],
-                                     order[2], order[4], order[3] + order[4] - order[0] + rst['avgPx']))
-                                self.conn.set(constants.trade_his_key, his)
+                                    his = self.conn.get(constants.trade_his_key)
+                                    his.append(
+                                        (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 1, order[0], cel[0]['avgPx'],
+                                         order[2], order[4], order[3] + order[4] - order[0] + cel[0]['avgPx']))
+                                    self.conn.set(constants.trade_his_key, his)
 
                                 #logger.info("############" + bytes(order[4]) + "以实际成交均价建仓滑点 " + bytes(rst['avgPx'] - order[1]) + " ##############")
                                 break
                             #应该还有部分成交的情形
-                        if waiting % 6 == 0:
-                            slipp += 3
+                        #if waiting % 2 == 0:
+                        slipp += 5
                     except Exception, e:
                         logger.info(e)
                         logger.info('###异常订单### orderID =' + rst['orderID'])
@@ -173,8 +173,8 @@ class mexliquidation(object):
                                 self.conn.set(constants.trade_his_key, his)
                             break
                         else:
-                            waiting += 4
-                            time.sleep(1)
+                            waiting += 1
+                            time.sleep(2)
                             cel = self.mex.cancel(rst['orderID'])
                             if order[2] > 0:
                                 logger.info('###mex2秒后取消卖出建仓###')
@@ -182,27 +182,27 @@ class mexliquidation(object):
                                 logger.info('###mex2秒后取消卖出平仓###')
                             logger.info(cel)
                             if 'Filled' == cel[0]['ordStatus']:#已经成交无法取消了，哈哈哈
-                                self.server.plusUpdate(order[0], rst['avgPx'], order[2])
+                                self.server.plusUpdate(order[0], cel[0]['avgPx'], order[2])
                                 if order[2] > 0:
                                     logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(
-                                        rst['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "建仓滑点 " + bytes(
-                                        order[0] - rst['avgPx'] - order[4]) + " #######")
+                                        cel[0]['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "建仓滑点 " + bytes(
+                                        order[0] - cel[0]['avgPx'] - order[4]) + " #######")
                                     his = self.conn.get(constants.trade_his_key)
                                     his.append((datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 2, order[0],
-                                                rst['avgPx'], order[2], order[4], order[0] - rst['avgPx'] - order[4]))
+                                                cel[0]['avgPx'], order[2], order[4], order[0] - cel[0]['avgPx'] - order[4]))
                                     self.conn.set(constants.trade_his_key, his)
                                 else:
-                                    logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(rst['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] - order[4] + order[0] - rst['avgPx']) + " #######")
+                                    logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(cel[0]['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] - order[4] + order[0] - rst['avgPx']) + " #######")
                                     his = self.conn.get(constants.trade_his_key)
                                     his.append(
                                         (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 2, order[0],
-                                         rst['avgPx'],
-                                         order[2], order[4], order[3] - order[4] + order[0] - rst['avgPx']))
+                                         cel[0]['avgPx'],
+                                         order[2], order[4], order[3] - order[4] + order[0] - cel[0]['avgPx']))
                                     self.conn.set(constants.trade_his_key, his)
                                 break
                             #应该还有部分成交的情形
-                        if waiting % 6 == 0:
-                            slipp += 3
+                        #if waiting % 6 == 0:
+                        slipp += 5
                     except Exception:
                         logger.info('###异常订单### orderID ='+rst['orderID'])
                         self.mex.cancel(rst['orderID'])

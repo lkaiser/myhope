@@ -40,3 +40,8 @@ print now
 if now< datetime.datetime.now():
     print True
 print b[0:30]
+
+a = 8.5
+b = None
+
+print a + b

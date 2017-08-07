@@ -287,8 +287,8 @@ class TradeMexAndOk(object):
                             print "操你大爷，都卖光了还要卖？"
 
                         self.conn.set(self.slipkey, self.split_position)
-                        #logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                        logger.info(self.conn.get(self.slipkey))
+                        logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
+                        #logger.info(self.conn.get(self.slipkey))
                         #logger.info("@@@@@@@@@okprice=="+bytes(self.lastevenuprice))
                         okprice = self.lastevenuprice
                         now_create = okprice - self.mex_asks_price
