@@ -124,6 +124,7 @@ if __name__ == '__main__':
    print b
    print type(b[0])
 
+
    m = hashlib.md5()
    str = "minijjlk"
    m.update(str)
