@@ -244,7 +244,6 @@ class TradeMexAndOk(object):
             try:
                 new_holding = self.okcoin.get_position(self.contract_type)['holding'][0]
                 amount_change = new_holding['sell_amount'] - init_holding['sell_amount']
-
                 logger.info("ok_sell_balance="+bytes(self.ok_sell_balance)+"amount_change = "+bytes(amount_change))
 
                 self.ok_sell_balance += amount_change
@@ -261,7 +260,7 @@ class TradeMexAndOk(object):
                     #logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
                     logger.info("################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
                     self.mexliquidation.suborder(okprice,sell_price,amount_change,self.expected_profit,self.basis_create,'buy')
-                    self.basis_create += float(amount_change) / float(self.deal_amount) * float(self.step_price)
+                    self.basis_create += round(float(amount_change) / float(self.deal_amount) * float(self.step_price),3)
                     self.conn.set(constants.higher_basic_create_key, self.basis_create)
 
                 if amount_change < 0:#有仓位被平
@@ -295,7 +294,7 @@ class TradeMexAndOk(object):
                         #logger.info("@@@@@@@@@now_create==" + bytes(now_create))
                         #logger.info("@@@@@@@@@higher_back_distant==" + bytes(constants.higher_back_distant))
                         #logger.info("@@@@@@@@@higher_basic_create_key==" + constants.higher_basic_create_key)
-                        self.basis_create = now_create + constants.higher_back_distant
+                        self.basis_create = round(now_create + constants.higher_back_distant,3)
                         self.conn.set(constants.higher_basic_create_key, self.basis_create)
                         #self.basis_create = now_create +8
                         self.balancelock.release()
@@ -373,8 +372,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 400000:
-                        time.sleep(round((400000 - escape) / 1000000.0, 2))
+                    if escape < 500000:
+                        time.sleep(round((500000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -458,8 +457,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 400000:
-                        time.sleep(round((400000-escape)/1000000.0,2))
+                    if escape < 500000:
+                        time.sleep(round((500000-escape)/1000000.0,2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")

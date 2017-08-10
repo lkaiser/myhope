@@ -78,5 +78,5 @@ class Bitmex(object):
         for i in return_l:
             if i['symbol'] == symbol:
                 count = return_l.index(i)
-        print return_l
-        return return_l[count]['avgCostPrice'], return_l[count]['currentQty']
+                #print return_l
+                return return_l[count]['avgCostPrice'], return_l[count]['currentQty']

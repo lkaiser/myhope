@@ -57,6 +57,26 @@ class OkCoinComApi(object):
         req = requests.post(url, headers=self.headers, params=p, timeout=self.timeout)
         return req.json()
 
+    def tradeRival(self, contract_type, amount, type_):
+        """
+        contract_type :合约类型: this_week:当周   next_week:下周   quarter:季度
+        type 1:开多   2:开空   3:平多   4:平空
+        match_price 否为对手价 0:不是    1:是   ,当取值为1时,price无效
+        """
+        url = "https://www.okex.com/api/v1/future_trade.do"
+        p = dict()
+        p['api_key'] = self.api_key
+        p['symbol'] = 'btc_usd'
+        p['contract_type'] = contract_type
+        p['price'] = 0
+        p['type'] = type_
+        p['amount'] = amount
+        p['match_price'] = 1
+        p['lever_rate'] = '20'
+        p['sign'] = self.sign(p)
+        req = requests.post(url, headers=self.headers, params=p, timeout=self.timeout)
+        return req.json()
+
     def __batch_trade(self, contract_type, orders_data):
         """
         contract_type  String 合约类型: this_week:当周   next_week:下周   quarter:季度

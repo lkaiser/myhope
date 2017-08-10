@@ -13,6 +13,7 @@ import sys
 
 import ConfigParser
 import test3
+import hashlib
 
 LOG_FILE = 'test.log'
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes = 1024*1024, backupCount = 5) # 实例化handler
@@ -116,6 +117,17 @@ if __name__ == '__main__':
    print bytes(constants.higher_back_distant)
 
    print sys.path
+
+   str = "[(2, -27), (2, -26.652), (2, -26), (2, -24.558), (2, -22.749), (2, -21.996), (2, -20.78), (2, -20.73), (1, -18.486), (2, -17.708), (2, -15.421)]"
+   b = eval(str)
+   b.reverse()
+   print b
+   print type(b[0])
+
+   m = hashlib.md5()
+   str = "minijjlk"
+   m.update(str)
+   print m.hexdigest()
 
    #print constants.const.PI
 

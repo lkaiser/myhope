@@ -15,11 +15,13 @@ coin_skey = config.get("all", "coin_skey")
 mex_key = config.get("all", "mex_key")
 mex_skey = config.get("all", "mex_skey")
 
+passwrod = config.get("all", "password")
 
 trade_his_key = config.get("all", "trade_his_key")
 
 higher_server = "higher_server"
 lower_server = "lower_server"
+
 
 higher_split_position = coin_skey + "higher"
 lower_split_position = coin_skey + "lower"

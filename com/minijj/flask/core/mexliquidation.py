@@ -118,6 +118,9 @@ class mexliquidation(object):
 
                                 #logger.info("############" + bytes(order[4]) + "以实际成交均价建仓滑点 " + bytes(rst['avgPx'] - order[1]) + " ##############")
                                 break
+                            if 'Canceled' == cel[0]['ordStatus']:
+                                if cel[0]['cumQty']:
+                                    partdel += cel[0]['cumQty']
                             #应该还有部分成交的情形
                         #if waiting % 2 == 0:
                         slipp += 5
@@ -201,6 +204,9 @@ class mexliquidation(object):
                                     self.conn.set(constants.trade_his_key, his)
                                 break
                             #应该还有部分成交的情形
+                            if 'Canceled' == cel[0]['ordStatus']:
+                                if cel[0]['cumQty']:
+                                    partdel += cel[0]['cumQty']
                         #if waiting % 6 == 0:
                         slipp += 5
                     except Exception:

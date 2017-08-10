@@ -2,6 +2,7 @@
 import datetime
 import time
 import json
+import hashlib
 
 from flask import render_template
 from flask import Flask
@@ -24,7 +25,10 @@ import core.constants as constants
 from core.db import db
 from core.db import rediscon
 
-
+import core.api.okcoin_com_api as okcom
+from core.api import bitmex_api
+okcoin = okcom.OkCoinComApi(constants.coin_key, constants.coin_skey)
+mex = bitmex_api.Bitmex(constants.mex_skey,constants.mex_key)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
@@ -66,7 +70,10 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if(request.form['password'] == "minijj"):
+        m = hashlib.md5()
+        str = request.form['password']
+        m.update(str)
+        if(m.hexdigest() == constants.password):
             user = User("minijj")
             login_user(user)
             return flask.redirect(flask.url_for('admin'))
@@ -103,6 +110,10 @@ def admin():
     server2 = redis.get(constants.higher_server)
 
 
+    ok_holding = okcoin.get_position(constants.higher_contract_type)['holding'][0]
+    mex_holding = mex.get_position(constants.higher_mex_contract_type)
+    print mex_holding
+
     lowercreate = redis.get(constants.lower_basic_create_key)
     highercreate = redis.get(constants.higher_basic_create_key)
     orders = redis.get(constants.trade_his_key)
@@ -116,8 +127,37 @@ def admin():
         else:
             break
     orders = orders[0:30]
-    return render_template('admin.html',main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),holdh=redis.get(constants.coin_skey + 'higher'),holdl=redis.get(constants.coin_skey + 'lower'),orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count)
+    holdl = redis.get(constants.lower_split_position)
+    holdh = redis.get(constants.higher_split_position)
+    all = 0
+    for ho in holdl:
+        all += ho[0]
+    for ho in holdh:
+        all += ho[0]
+    return render_template('admin.html',ok_holding=ok_holding,mex_holding=mex_holding,main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),all=all,holdh=holdh,holdl=holdl,orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count)
 
+@app.route('/liquid')
+@login_required
+def liquid():
+    ac = request.args.get("action")
+    count = request.args.get("count")
+    print ac
+    print count
+    if "liquidh" == ac:
+        okcoin.tradeRival(constants.higher_contract_type, int(count), 4)
+        return "True"
+    if "liquidl" == ac:
+        okcoin.tradeRival(constants.higher_contract_type, int(count), 3)
+        return "True"
+    if "liquidhall" == ac:
+        amount = okcoin.get_position(constants.higher_contract_type)['holding'][0]['sell_amount']
+        okcoin.tradeRival(constants.higher_contract_type, amount, 4)
+        return "True"
+    if "liquidhall" == ac:
+        amount = okcoin.get_position(constants.higher_contract_type)['holding'][0]['buy_amount']
+        okcoin.tradeRival(constants.higher_contract_type, amount, 3)
+        return "True"
+    return "WTF"
 @app.route('/setting' , methods=['GET', 'POST'])
 @login_required
 def setting():
