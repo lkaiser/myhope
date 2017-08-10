@@ -1,7 +1,0 @@
-2017-07-31 12:38:13,270 - mexliquidation.py:38 - tst - 老子跑起来了，哈哈哈
-2017-07-31 12:38:13,611 - ok_lower.py:83 - tst - ##############初始化 后分段持仓##########
-2017-07-31 12:38:13,611 - ok_lower.py:87 - tst - []
-2017-07-31 12:38:13,612 - ok_lower.py:153 - tst - connecting to MEX... 
-2017-07-31 12:38:15,085 - ok_lower.py:155 - tst - Done
-2017-07-31 12:38:15,085 - ok_lower.py:160 - tst - {"info":"Welcome to the BitMEX Realtime API.","version":"1.2.0","timestamp":"2017-07-31T04:38:14.943Z","docs":"https://www.bitmex.com/app/wsAPI"}
-2017-07-31 12:38:15,365 - ok_lower.py:161 - tst - {"table":"orderBook10","keys":["symbol"],"types":{"symbol":"symbol","bids":"","asks":"","timestamp":"timestamp"},"foreignKeys":{"symbol":"instrument"},"attributes":{"symbol":"sorted"},"action":"partial","data":[{"symbol":"XBTU17","bids":[[2634.1,5418],[2634,5961],[2633.8,6570],[2632.6,12],[2632.5,529],[2632.3,13445],[2632.2,7600],[2632.1,25000],[2631.8,37],[2631.3,539]],"asks":[[2635.4,99],[2636,1085],[2636.1,1700],[2637.9,1012],[2638,5000],[2638.3,600],[2638.4,37],[2638.6,1700],[2638.9,700],[2639,5539]],"timestamp":"2017-07-31T04:38:15.116Z"}],"filter":{"symbol":"XBTU17"}}

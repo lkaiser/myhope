@@ -117,7 +117,6 @@ if __name__ == '__main__':
    print bytes(constants.higher_back_distant)
 
    print sys.path
-
    str = "[(2, -27), (2, -26.652), (2, -26), (2, -24.558), (2, -22.749), (2, -21.996), (2, -20.78), (2, -20.73), (1, -18.486), (2, -17.708), (2, -15.421)]"
    b = eval(str)
    b.reverse()
