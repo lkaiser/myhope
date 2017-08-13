@@ -1,9 +1,5 @@
-import sys
-import os
-parentpath = os.path.dirname(sys.path[0])
+# -*- coding: utf-8 -*-
 
-#print "#########parentpath=",parentpath
-sys.path.append(parentpath)
 
 from flask_wtf import Form
 from wtforms import StringField, FloatField,SubmitField,IntegerField,TextAreaField

@@ -209,4 +209,13 @@ class OkCoinComApi(object):
         req = requests.post(url, headers=self.headers, params=p,timeout=self.timeout)
         return req.json()
 
+    def get_userinfo(self):
+        url = 'https://www.okex.com/api/v1/future_userinfo.do'
+        p = dict()
+        p['api_key'] = self.api_key
+        p['sign'] = self.sign(p)
+        #print p
+        req = requests.post(url, headers=self.headers, params=p,timeout=self.timeout)
+        return req.json()
+
 

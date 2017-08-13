@@ -24,3 +24,8 @@ class Conn_db():
             return value_
         else:
             return []  # 为None(值不存在)，返回空列表
+
+    # 读取
+    def delete(self, key_):
+        # 从数据库根据键（key）获取值
+        self.conn.delete(key_)

@@ -57,11 +57,20 @@ class TradeMexAndOk(object):
         self.deal_amount = deal_amount
         self.expected_profit = expected_profit
         self.basis_create = basis_create
+        self.higher_back_distant = constants.higher_back_distant
         self.basis_cover = -500
         self.step_price = step_price
         self.init_basis_create = basis_create
         self.init_MAX_Size = max_size
         self.normal = True
+
+        self.conn = Conn_db()
+        self.conn.set(constants.higher_max_size_key,self.MAX_Size)
+        self.conn.set(constants.higher_deal_amount_key, self.deal_amount)
+        self.conn.set(constants.higher_expected_profit_key, self.expected_profit)
+        self.conn.set(constants.higher_back_distant_key, self.higher_back_distant)
+        self.conn.set(constants.higher_basic_create_key, self.basis_create)
+        self.conn.set(constants.higher_step_price_key, self.step_price)
         self.mexliquidation = mexliquidation.mexliquidation(self.mex,self)
         self.mexliquidation.start()
         okposition = self.okcoin.get_position(self.contract_type)['holding'][0]
@@ -71,11 +80,11 @@ class TradeMexAndOk(object):
             self.ok_sell_balance = okposition['sell_amount']
             self.mex_buy_balance = self.ok_sell_balance
         self.balancelock = threading.Lock()
-        self.conn = Conn_db()
+
         self.conn.set(constants.higher_buy_run_key, True)
         self.conn.set(constants.higher_sell_run_key, True)
         self.conn.set(constants.higher_main_run_key, True)
-        self.conn.set(constants.higher_basic_create_key, self.basis_create)
+
         self.slipkey = constants.higher_split_position
         self.lastevenuprice = 0
         self.lastsub = datetime.datetime.now()
@@ -182,6 +191,30 @@ class TradeMexAndOk(object):
             try:
                 time.sleep(3)
                 self.ws.send("ping")
+                fastformh = self.conn.get("fastformh")
+                if fastformh:
+                    logger.info("############fast formh setting################")
+                    beforestatus = self.conn.get(constants.higher_main_run_key)
+                    self.conn.set(constants.higher_main_run_key, False)
+                    time.sleep(2)
+                    self.init_MAX_Size = fastformh['higher_max_size']
+                    self.deal_amount = fastformh['higher_deal_amount']
+                    self.expected_profit = fastformh['higher_expected_profit']
+                    self.basis_create = fastformh['higher_basis_create']
+                    self.higher_back_distant = fastformh['higher_back_distant']
+                    self.step_price = fastformh['higher_step_price']
+
+                    self.conn.set(constants.higher_max_size_key, self.MAX_Size)
+                    self.conn.set(constants.higher_deal_amount_key, self.deal_amount)
+                    self.conn.set(constants.higher_expected_profit_key, self.expected_profit)
+                    self.conn.set(constants.higher_back_distant_key, self.higher_back_distant)
+                    self.conn.set(constants.higher_basic_create_key, self.basis_create)
+                    self.conn.set(constants.higher_step_price_key, self.step_price)
+
+                    if beforestatus:
+                        self.conn.set(constants.higher_main_run_key, True)
+                    self.conn.delete("fastformh")
+
             except:
                 pass
 
@@ -294,7 +327,7 @@ class TradeMexAndOk(object):
                         #logger.info("@@@@@@@@@now_create==" + bytes(now_create))
                         #logger.info("@@@@@@@@@higher_back_distant==" + bytes(constants.higher_back_distant))
                         #logger.info("@@@@@@@@@higher_basic_create_key==" + constants.higher_basic_create_key)
-                        self.basis_create = round(now_create + constants.higher_back_distant,3)
+                        self.basis_create = round(now_create + self.higher_back_distant,3)
                         self.conn.set(constants.higher_basic_create_key, self.basis_create)
                         #self.basis_create = now_create +8
                         self.balancelock.release()
@@ -372,8 +405,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 500000:
-                        time.sleep(round((500000 - escape) / 1000000.0, 2))
+                    if escape < 550000:
+                        time.sleep(round((550000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -457,8 +490,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 500000:
-                        time.sleep(round((500000-escape)/1000000.0,2))
+                    if escape < 550000:
+                        time.sleep(round((550000-escape)/1000000.0,2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -551,9 +584,9 @@ sell.setDaemon(True)
 ping_thread.setDaemon(True)
 
 ws.start()
-time.sleep(7)
+time.sleep(5)
 pm.start()
-time.sleep(3)
+time.sleep(1)
 sell.start()
 buy.start()
 #splitposcheck.start()

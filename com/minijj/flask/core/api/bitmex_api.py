@@ -80,3 +80,32 @@ class Bitmex(object):
                 count = return_l.index(i)
                 #print return_l
                 return return_l[count]['avgCostPrice'], return_l[count]['currentQty']
+
+
+    def get_positionAll(self,):
+        expires = int(round(time.time()) + 10)
+        headers = {'api-expires': str(expires), 'api-key': self.apiKey,
+                   'api-signature': self.generate_signature(self.apiSecret, 'GET',
+                                                            '/api/v1/position', expires,
+                                                            ""),
+                   'content-type': 'application/json'}
+        req = requests.get("https://www.bitmex.com/api/v1/position", headers=headers,
+                           )
+        return_l = req.json()
+        return return_l
+        # for i in return_l:
+        #     if i['symbol'] == symbol:
+        #         count = return_l.index(i)
+        #         return return_l[count]
+
+    def get_userCommission(self):
+        expires = int(round(time.time()) + 10)
+        headers = {'api-expires': str(expires), 'api-key': self.apiKey,
+                   'api-signature': self.generate_signature(self.apiSecret, 'GET',
+                                                            '/api/v1/position', expires,
+                                                            ""),
+                   'content-type': 'application/json'}
+        req = requests.get("https://www.bitmex.com/api/v1/position", headers=headers,
+                           )
+        return_l = req.json()
+        return return_l

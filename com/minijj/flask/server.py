@@ -9,6 +9,8 @@ from flask import Flask
 from flask import request
 from flask import session
 from form.settingForm import settingForm
+from form.fastHigherForm import fastHigherForm
+from form.fastLowerForm import fastLowerForm
 import flask
 
 from flask_login import (LoginManager, login_required, login_user,
@@ -112,18 +114,27 @@ def admin():
 
     ok_holding = okcoin.get_position(constants.higher_contract_type)['holding'][0]
     mex_holding = mex.get_position(constants.higher_mex_contract_type)
-    print mex_holding
+    #print mex_holding
 
     lowercreate = redis.get(constants.lower_basic_create_key)
     highercreate = redis.get(constants.higher_basic_create_key)
     orders = redis.get(constants.trade_his_key)
     orders.reverse()
+    today = datetime.date.today()
+    today = datetime.datetime.strptime(str(today), '%Y-%m-%d')
+    todaycount = 0
     now = datetime.datetime.now() -datetime.timedelta(hours=24)
     count = 0
     for od in orders:
         if now < datetime.datetime.strptime(od[0],'%Y-%m-%d %H:%M:%S'):
             if od[4] < 0:
                 count -= od[4]
+        else:
+            break
+    for od in orders:
+        if today < datetime.datetime.strptime(od[0],'%Y-%m-%d %H:%M:%S'):
+            if od[4] < 0:
+                todaycount -= od[4]
         else:
             break
     orders = orders[0:30]
@@ -134,7 +145,24 @@ def admin():
         all += ho[0]
     for ho in holdh:
         all += ho[0]
-    return render_template('admin.html',ok_holding=ok_holding,mex_holding=mex_holding,main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),all=all,holdh=holdh,holdl=holdl,orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count)
+
+    forml = fastLowerForm()
+    forml.lower_max_size.data = redis.get(constants.lower_max_size_key)
+    forml.lower_deal_amount.data = redis.get(constants.lower_deal_amount_key)
+    forml.lower_expected_profit.data = redis.get(constants.lower_expected_profit_key)
+    forml.lower_back_distant.data = redis.get(constants.lower_back_distant_key)
+    forml.lower_basis_create.data = redis.get(constants.lower_basic_create_key)
+    forml.lower_step_price.data = redis.get(constants.lower_step_price_key)
+
+    formh = fastHigherForm()
+    formh.higher_max_size.data = redis.get(constants.higher_max_size_key)
+    formh.higher_deal_amount.data = redis.get(constants.higher_deal_amount_key)
+    formh.higher_expected_profit.data = redis.get(constants.higher_expected_profit_key)
+    formh.higher_back_distant.data = redis.get(constants.higher_back_distant_key)
+    formh.higher_basis_create.data = redis.get(constants.higher_basic_create_key)
+    formh.higher_step_price.data = redis.get(constants.higher_step_price_key)
+
+    return render_template('admin.html',forml=forml,formh=formh,ok_holding=ok_holding,mex_holding=mex_holding,main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),all=all,holdh=holdh,holdl=holdl,orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count,todaysum=todaycount)
 
 @app.route('/liquid')
 @login_required
@@ -142,22 +170,47 @@ def liquid():
     ac = request.args.get("action")
     count = request.args.get("count")
     print ac
-    print count
+    #print count
     if "liquidh" == ac:
         okcoin.tradeRival(constants.higher_contract_type, int(count), 4)
         return "True"
     if "liquidl" == ac:
-        okcoin.tradeRival(constants.higher_contract_type, int(count), 3)
+        okcoin.tradeRival(constants.lower_contract_type, int(count), 3)
         return "True"
     if "liquidhall" == ac:
         amount = okcoin.get_position(constants.higher_contract_type)['holding'][0]['sell_amount']
         okcoin.tradeRival(constants.higher_contract_type, amount, 4)
         return "True"
-    if "liquidhall" == ac:
-        amount = okcoin.get_position(constants.higher_contract_type)['holding'][0]['buy_amount']
-        okcoin.tradeRival(constants.higher_contract_type, amount, 3)
+    if "liquidlall" == ac:
+        amount = okcoin.get_position(constants.lower_contract_type)['holding'][0]['buy_amount']
+        #print amount
+        okcoin.tradeRival(constants.lower_contract_type, amount, 3)
         return "True"
     return "WTF"
+
+
+@app.route('/fastlsetting' , methods=['POST'])
+@login_required
+def fastlsetting():
+    form = fastLowerForm()
+    constants.updatel(form)
+    fm = {"lower_max_size": form.lower_max_size.data, "lower_deal_amount": form.lower_deal_amount.data,
+          "lower_expected_profit": form.lower_expected_profit.data,
+          "lower_back_distant": form.lower_back_distant.data, "lower_basis_create": form.lower_basis_create.data,
+          "lower_step_price": form.lower_step_price.data}
+    redis.set("fastforml",fm)
+    print form
+    return flask.redirect(flask.url_for('admin'))
+
+@app.route('/fasthsetting' , methods=['POST'])
+@login_required
+def fasthsetting():
+    form = fastHigherForm()
+    constants.updateh(form)
+    fm = {"higher_max_size":form.higher_max_size.data,"higher_deal_amount":form.higher_deal_amount.data,"higher_expected_profit":form.higher_expected_profit.data,"higher_back_distant":form.higher_back_distant.data,"higher_basis_create":form.higher_basis_create.data,"higher_step_price":form.higher_step_price.data}
+    redis.set("fastformh", fm)
+    return flask.redirect(flask.url_for('admin'))
+
 @app.route('/setting' , methods=['GET', 'POST'])
 @login_required
 def setting():
@@ -185,6 +238,8 @@ def setting():
                 redis.set(constants.higher_split_position, hsplit_position)
             else:
                 redis.set(constants.lower_split_position, [])
+            redis.set(constants.higher_basic_create_key, form.higher_basis_create.data)
+            redis.set(constants.lower_basic_create_key, form.lower_basis_create.data)
             constants.update(form)
             #os.system('ls -l *')
         else:

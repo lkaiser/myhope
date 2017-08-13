@@ -147,23 +147,94 @@ $(document).ready(function() {
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> basic_create
+                            <i class="fa fa-bell fa-fw"></i> 成交情况
                         </div>
                         <!-- /.panel-heading -->
                         <div class="row">
 
-                        <div class="col-lg-3 col-md-3">
+                        <div class="col-lg-6 col-md-6">
                             <p>24小时成交 {{sum}}</p>
                             <!-- /.list-group -->
                         </div>
-                            <div class="col-lg-3 col-md-3">
-                            <p>lower {{lowercreate}}</p>
+                            <div class="col-lg-6 col-md-6">
+                            <p>今日成交 {{todaysum}}</p>
                             <!-- /.list-group -->
                         </div>
-                            <div class="col-lg-3 col-md-3">
-                            <p>higher {{highercreate}}</p>
+                            </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                    <!-- /.panel .chat-panel -->
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> 快速设置
+                        </div>
+                        <!-- /.panel-heading -->
+                        {% macro render_field(field) %}
+  {% if field.errors %}
+    <ul class=errors>
+    {% for error in field.errors %}
+      <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+  </dd>
+{% endmacro %}
+                        <div class="row">
+                            <form role="form" action="/fastlsetting" method="POST">
+                            <div class="col-lg-6 col-md-6">
+                            <p>Lower_max_size
+                                {{ forml.lower_max_size(class='form-control')}}
+                                {{ render_field(forml.lower_max_size) }}</p>
+                            <p>lower_deal_amount
+                                {{ forml.lower_deal_amount(class='form-control')}}
+                                {{ render_field(forml.lower_deal_amount) }}</p>
+                            <p>lower_expected_profit
+                                {{ forml.lower_expected_profit(class='form-control')}}
+                                {{ render_field(forml.lower_expected_profit) }}</p>
+                            <p>lower_back_distant
+                                {{ forml.lower_back_distant(class='form-control')}}
+                                {{ render_field(forml.lower_back_distant) }}</p>
+                            <p>lower_basis_create
+                                {{ forml.lower_basis_create(class='form-control')}}
+                                {{ render_field(forml.lower_basis_create) }}</p>
+                            <p>lower_step_price
+                                {{ forml.lower_step_price(class='form-control')}}
+                                {{ render_field(forml.lower_step_price) }}</p>
+                            <p>{{ forml.submit}}
+                                {{ render_field(forml.submit) }}</p>
                             <!-- /.list-group -->
                         </div>
+                            </form>
+                            <form role="form" action="/fasthsetting" method="POST">
+                            <div class="col-lg-6 col-md-6">
+                            <p>higher_max_size
+                                {{ formh.higher_max_size(class='form-control')}}
+                                {{ render_field(formh.higher_max_size) }}</p>
+                            <p>higher_deal_amount
+                                {{ formh.higher_deal_amount(class='form-control')}}
+                                {{ render_field(formh.higher_deal_amount) }}</p>
+                            <p>higher_expected_profit
+                                {{ formh.higher_expected_profit(class='form-control')}}
+                                {{ render_field(formh.higher_expected_profit) }}</p>
+                            <p>higher_back_distant
+                                {{ formh.higher_back_distant(class='form-control')}}
+                                {{ render_field(formh.higher_back_distant) }}</p>
+                            <p>higher_basis_create
+                                {{ formh.higher_basis_create(class='form-control')}}
+                                {{ render_field(formh.higher_basis_create) }}</p>
+                            <p>higher_step_price
+                                {{ formh.higher_step_price(class='form-control')}}
+                                {{ render_field(formh.higher_step_price) }}</p>
+                            <p>{{ formh.submit}}
+                                {{ render_field(formh.submit) }}</p>
+                            <!-- /.list-group -->
+                        </div>
+                                </form>
                             </div>
                         <!-- /.panel-body -->
                     </div>

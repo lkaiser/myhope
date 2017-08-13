@@ -35,6 +35,9 @@ a.append("c")
 b = redis.get(constants.trade_his_key)
 b.reverse()
 logger.info("##############python 调用 test##########")
+c = datetime.date.today()
+d = datetime.datetime.strptime(str(c),'%Y-%m-%d')
+print d
 now = datetime.datetime.now() -datetime.timedelta(hours=24)
 print now
 if now< datetime.datetime.now():
@@ -44,4 +47,4 @@ print b[0:30]
 a = 8.5
 b = None
 
-print a + b
+#print a + b
