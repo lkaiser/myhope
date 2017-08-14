@@ -8,6 +8,7 @@ from db import rediscon
 import time
 import constants as constants
 import api.okcoin_com_api as okcom
+from api import bitmex_api
 
 import sys
 
@@ -93,9 +94,15 @@ if __name__ == '__main__':
 
    redis = rediscon.Conn_db()
    skey = constants.coin_skey
-   print redis.get(constants.coin_skey + 'lower')
+   print redis.get(constants.lower_split_position)
    okcoin = okcom.OkCoinComApi(constants.coin_key, constants.coin_skey)
-   print okcoin.get_order_info(constants.lower_contract_type)
+   print "########here"
+   print okcoin.get_userinfo()
+
+   mex = bitmex_api.Bitmex(constants.mex_skey,constants.mex_key)
+   mexall = mex.get_userCommission()
+   print "#########mex info"
+   print mexall
 
    tradehis = []
    tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'),15,"20",2+5-3))
@@ -111,7 +118,7 @@ if __name__ == '__main__':
    # config.set("all", "author", "fredrik aaaaa")
    # config.write(open('constants.ini', "r+"))
    #print a
-   test3.printcfg()
+   #test3.printcfg()
 
    print "@@@@@@@@@2"
    print bytes(constants.higher_back_distant)
@@ -126,7 +133,7 @@ if __name__ == '__main__':
 
 
    m = hashlib.md5()
-   str = "minijjlk"
+   str = "lulu"
    m.update(str)
    print m.hexdigest()
 
