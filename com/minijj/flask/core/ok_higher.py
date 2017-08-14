@@ -286,7 +286,6 @@ class TradeMexAndOk(object):
                     okprice = (new_holding['sell_price_avg'] * new_holding['sell_amount'] - init_holding[
                         'sell_price_avg'] * init_holding['sell_amount']) / amount_change
                     sell_price = round(self.mex_bids_price + 8, 1)#以成交为第一目的
-                    now_create = okprice - self.mex_bids_price
                     logger.info(init_holding)
                     logger.info(new_holding)
                     logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.mex_bids_price))

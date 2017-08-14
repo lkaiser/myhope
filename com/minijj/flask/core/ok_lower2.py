@@ -2,7 +2,6 @@
 import Queue
 import json
 import logging.handlers
-import sys
 import threading
 import time
 import datetime
@@ -18,50 +17,28 @@ from db.rediscon import Conn_db
 from market_maker import bitmex
 
 import sys
-import os
-
-LOG_FILE = sys.path[0]+'/lower.log'
-handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes = 1024*1024*4, backupCount = 10) # 实例化handler
-fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
-
-formatter = logging.Formatter(fmt)  # 实例化formatter
-handler.setFormatter(formatter)  # 为handler添加formatter
 
 logger = logging.getLogger('tst')  # 获取名为tst的logger
-logger.addHandler(handler)  # 为logger添加handler
-logger.setLevel(logging.DEBUG)
 
-
-class TradeMexAndOk(object):
-    def __init__(self, contract_type='quarter', max_size=24, deal_amount=6,
-                 expected_profit=5, basis_create=40, step_price=1.5):
-        key = constants.coin_key
-        skey = constants.coin_skey
-        mex_key = constants.mex_key
-        mex_skey = constants.mex_skey
-        bmext = bitmex.BitMEX(base_url='https://www.bitmex.com/api/v1/',
-                              symbol=mex_contract_type, apiKey=mex_key, apiSecret=mex_skey)
-        self.mex = bmext
+class OkLower(object):
+    def __init__(self,okcoin,mex,_mex,market,mexliquidation, contract_type='quarter', max_size=24, deal_amount=6,
+                 expected_profit=15, basis_create=40,lower_back_distant=15, step_price=1.5):
+        self.mex = mex
         self.contract_type = contract_type
-        self.okcoin = okcom.OkCoinComApi(key, skey)
+        self.okcoin = okcoin
         self.okcoin.cancel_all(self.contract_type)
-        self._mex = bitmex_api.Bitmex(mex_skey,mex_key)
-        self.ws = websocket.WebSocket()
-
-        self.q_asks_price = Queue.Queue(1)
-        self.q_bids_price = Queue.Queue(1)
-        self.mex_bids_price = None
-        self.mex_asks_price = None
+        self._mex = _mex
+        self.market = market
+        self.mexliquidation = mexliquidation
         self.MAX_Size = max_size
         self.deal_amount = deal_amount
         self.expected_profit = expected_profit
         self.basis_create = basis_create
-        self.lower_back_distant = constants.lower_back_distant
-        self.basis_cover = -500
+        self.lower_back_distant = lower_back_distant
         self.step_price = step_price
         self.init_basis_create = basis_create
         self.init_MAX_Size = max_size
-        self.normal = True
+        self.status = False
 
         self.conn = Conn_db()
         self.conn.set(constants.lower_max_size_key, self.MAX_Size)
@@ -83,17 +60,14 @@ class TradeMexAndOk(object):
         self.balancelock = threading.Lock()
 
 
-        self.conn.set(constants.lower_buy_run_key,True)
-        self.conn.set(constants.lower_sell_run_key,True)
-        self.conn.set(constants.lower_main_run_key,True)
+        #self.conn.set(constants.lower_buy_run_key,True)
+        #self.conn.set(constants.lower_sell_run_key,True)
+        #self.conn.set(constants.lower_main_run_key,True)
         self.slipkey = constants.lower_split_position
         self.lastevenuprice = 0
         self.lastsub = datetime.datetime.now()
         self.sublock = threading.Lock()
         self.amountsigal = 0
-
-
-        #self.cal_order(okposition,mexposition)
 
         logger.info("##############初始化 后分段持仓##########")
         self.split_position = self.conn.get(self.slipkey)
@@ -105,162 +79,6 @@ class TradeMexAndOk(object):
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
 
-    def cal_order(self,okposition,mexposition):
-        sposition = self.conn.get(self.slipkey)
-        if not sposition:
-            sposition = []
-        if not okposition or not okposition['buy_amount']:
-              self.conn.set(self.slipkey,[])
-        else:
-            if (mexposition[1] != okposition['buy_amount'] * 100):
-                logger.info("两端仓位不平，对冲个屁啊，赶紧改！")
-                sys.exit(1)
-            self.split_position = sposition
-            cnt = 0
-            allbais = 0
-            for pos in sposition:
-                cnt += pos[0]
-                allbais += pos[0]*pos[1]
-            if cnt < okposition['buy_amount']:
-                a = (okposition['buy_price_avg']-mexposition[0]) *okposition['buy_amount']-allbais
-                b = okposition['buy_amount'] - cnt
-                bais = round(a/b,3)
-                self.split_position.append(((okposition['buy_amount'] - cnt), bais))
-                self.conn.set(self.slipkey, self.split_position)
-            if (cnt > okposition['buy_amount']):
-                left_amount = cnt-okposition['buy_amount']
-                while (self.split_position and left_amount > 0):
-                    last_pos = self.split_position.pop()
-                    left_amount = left_amount - last_pos[0]
-                    if (left_amount < 0):
-                        self.split_position.append((-left_amount, last_pos[1]))
-                        break
-                self.conn.set(self.slipkey, self.split_position)
-
-
-
-    @staticmethod
-    def calc_price(order_list):
-        l = []
-        k = 0
-        for i in order_list:
-            k += i[0] * i[1]
-            l.append(i[1])
-        return k / sum(l)
-
-    def redefine_basic_create(self):
-        print "redefine_basic_create"
-        self.basis_create = self.init_basis_create
-
-    def get_ok_buy_contract_amount(self):  # OK空单持仓amount
-        return self.okcoin.get_position(self.contract_type)['holding'][0]['buy_amount']
-
-    #统计mex 3档行情买卖平均价
-    def calc_mex_order_price(self, recv_data):
-        asks_price = self.calc_price(json.loads(recv_data)['data'][0]['asks'][0:3])
-        bids_price = self.calc_price(json.loads(recv_data)['data'][0]['bids'][0:3])
-        return asks_price, bids_price
-
-    @retry(stop_max_attempt_number=5, wait_fixed=2000)
-    def init_ws(self):
-        init_asks_price, init_bids_price = None, None
-        while not init_asks_price and not init_bids_price:
-            try:
-                self.ws.close()
-                logger.info("connecting to MEX... ")
-                self.ws.connect("wss://www.bitmex.com/realtime")
-                logger.info("Done")
-                print '{"op": "subscribe", "args": ["orderBook10:'+mex_contract_type+'"]}'
-                self.ws.send('{"op": "subscribe", "args": ["orderBook10:'+mex_contract_type+'"]}')
-                self.ws.timeout = 8
-                recv_data = ""
-                logger.info(self.ws.recv())
-                logger.info(self.ws.recv())  # welcome info.
-                while '"table":"orderBook10"' not in recv_data:
-                    recv_data = self.ws.recv()
-                init_asks_price, init_bids_price = self.calc_mex_order_price(recv_data)
-                self.q_asks_price.put(init_asks_price)
-                self.q_bids_price.put(init_bids_price)
-                return init_asks_price, init_bids_price
-            except Exception, e:
-                logger.info("############cannot connect to mex################")
-                logger.info(e)
-                time.sleep(5)
-                pass
-
-    def ping_thread(self):
-        while 1:
-            try:
-                time.sleep(3)
-                self.ws.send("ping")
-                fastformh = self.conn.get("fastforml")
-                if fastformh:
-                    logger.info("############fast forml setting################")
-                    beforestatus = self.conn.get(constants.lower_main_run_key)
-                    self.conn.set(constants.lower_main_run_key, False)
-                    time.sleep(2)
-                    self.init_MAX_Size = fastformh['lower_max_size']
-                    self.deal_amount = fastformh['lower_deal_amount']
-                    self.expected_profit = fastformh['lower_expected_profit']
-                    self.basis_create = fastformh['lower_basis_create']
-                    self.lower__back_distant = fastformh['lower_back_distant']
-                    self.step_price = fastformh['lower_step_price']
-
-                    self.conn.set(constants.lower__max_size_key, self.MAX_Size)
-                    self.conn.set(constants.lower__deal_amount_key, self.deal_amount)
-                    self.conn.set(constants.lower__expected_profit_key, self.expected_profit)
-                    self.conn.set(constants.lower__back_distant_key, self.lower__back_distant)
-                    self.conn.set(constants.lower__basic_create_key, self.basis_create)
-                    self.conn.set(constants.lower__step_price_key, self.step_price)
-
-                    if beforestatus:
-                        self.conn.set(constants.lower_main_run_key, True)
-                    self.conn.delete("fastforml")
-            except:
-                pass
-
-    def ws_thread(self):
-        init_asks_price, init_bids_price = self.init_ws()
-        while 1:
-            try:
-                recv_data = self.ws.recv()
-                if 'pong' in recv_data:
-                    continue
-                else:
-                    new_init_asks_price, new_init_bids_price = \
-                        self.calc_mex_order_price(
-                        recv_data)
-                    self.mex_asks_price = new_init_asks_price
-                    self.mex_bids_price = new_init_bids_price
-
-                    diff_asks = new_init_asks_price - init_asks_price
-
-                    #卖价波动超过0.3，最新价放到卖队列
-                    if not -0.3 < diff_asks < 0.3:
-                        init_asks_price = new_init_asks_price
-                        #print "asks changed", self.mex_asks_price
-                        try:
-                            self.q_asks_price.put(self.mex_asks_price, timeout=0.01)
-                        except:
-                            pass
-                            #print "too many"
-
-                    diff_bids = new_init_bids_price - init_bids_price
-
-                    # 买价波动超过0.3，最新价放到买队列
-                    if not -0.3 < diff_bids < 0.3:
-                        init_bids_price = new_init_bids_price
-                        #print "bids changed", self.mex_bids_price
-                        try:
-                            self.q_bids_price.put(self.mex_bids_price, timeout=0.01)
-                        except:
-                            pass
-                            #print "too many"
-
-            except Exception, e:
-                logger.info(e)
-                self.okcoin.cancel_all(self.contract_type)
-                self.init_ws()
 
     #现有问题，一开始就查持仓，执行到后面的重新提交平仓或者开仓动作时，并非以最新实际持仓下的操作，导致重复提交平仓（分步平仓下会影响盈利）、开仓（超过最大限额开仓）
     #一开始就要取消所有平仓、开仓动作,线程sleep 0.5s,执行接下来在查持仓,这样保证在一个循环周期内持仓不变
@@ -270,8 +88,9 @@ class TradeMexAndOk(object):
         if okposition:
             init_holding = okposition[0]
         while 1:
+            if not self.status:
+                break
             runmain = self.conn.get(constants.lower_main_run_key)
-            print "##############what the fuck",runmain
             if not runmain:
                 logger.info("###############lower position suspend##################")
                 time.sleep(2)
@@ -293,8 +112,7 @@ class TradeMexAndOk(object):
                 if amount_change > 0:
                     okprice = (new_holding['buy_price_avg'] * new_holding['buy_amount'] - init_holding[
                         'buy_price_avg'] * init_holding['buy_amount']) / amount_change
-                    sell_price = round(self.mex_bids_price - 8, 1)#以成交为第一目的
-                    now_create = okprice - self.mex_bids_price
+                    sell_price = round(self.market.mex_bids_price - 8, 1)#以成交为第一目的
                     logger.info(init_holding)
                     logger.info(new_holding)
                     logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.mex_bids_price))
@@ -309,7 +127,7 @@ class TradeMexAndOk(object):
 
                 if amount_change < 0:#有仓位被平
                     okprice = 0
-                    buy_price = round(self.mex_asks_price + 8, 1)
+                    buy_price = round(self.market.mex_asks_price + 8, 1)
                     # 按bais价格从高到低减,排序
 
                     last_pos = None
@@ -332,7 +150,7 @@ class TradeMexAndOk(object):
                         logger.info("################ammout 减少了 "+bytes(amount_change)+"，持仓变化如下 #######################")
                         logger.info(self.conn.get(self.slipkey))
                         okprice = self.lastevenuprice
-                        now_create = okprice - self.mex_asks_price
+                        now_create = okprice - self.market.mex_asks_price
                         #self.basis_create = now_create - 8
                         self.basis_create = round(now_create - self.lower_back_distant,3)
                         self.conn.set(constants.lower_basic_create_key, self.basis_create)
@@ -392,6 +210,8 @@ class TradeMexAndOk(object):
         cycletimes = 0
         laststatus = False
         while 1:
+            if not self.status:
+                break
             run = self.conn.get(constants.lower_buy_run_key)
             runmain = self.conn.get(constants.lower_main_run_key)
             if not run or not runmain:
@@ -403,7 +223,7 @@ class TradeMexAndOk(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.q_asks_price.get()
+            price = self.market.q_asks_price.get()
             end = datetime.datetime.now()
             logger.info("############buy order1 spend"+bytes(((end - start).microseconds)/1000.0)+"milli seconds ,q_asks_price= "+bytes(price))
             if order_id:
@@ -477,6 +297,8 @@ class TradeMexAndOk(object):
         cycletimes = 0
         laststatus = True
         while 1:
+            if not self.status:
+                break
             run = self.conn.get(constants.lower_sell_run_key)
             runmain = self.conn.get(constants.lower_main_run_key)
             if not run or not runmain:
@@ -488,7 +310,7 @@ class TradeMexAndOk(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.q_bids_price.get()
+            price = self.market.q_bids_price.get()
             end = datetime.datetime.now()
             logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ,q_bids_price= " + bytes(price))
             if order_id:
@@ -552,57 +374,63 @@ class TradeMexAndOk(object):
             end = datetime.datetime.now()
             logger.info("############sell order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
-
-    def splitposcheck(self):
+    def setting_check(self):
         while 1:
+            if not self.status:
+                break
             try:
-                if self.balancelock.acquire():
-                    #holding = self.conn.get('holding')
-                    sposition = self.conn.get(self.slipkey)
-                    if sposition:
-                        cnt = 0
-                        for pos in sposition:
-                            cnt += pos[0]
-                        #if cnt != holding[1]:
-                         #   logger.info("持仓检查错误，分布持仓汇总="+bytes(cnt)+" 总持仓= "+bytes(holding[1]))
-                self.balancelock.release()
+                time.sleep(1)
+                fastformh = self.conn.get("fastforml")
+                if fastformh:
+                    logger.info("############fast forml setting################")
+                    beforestatus = self.conn.get(constants.lower_main_run_key)
+                    self.conn.set(constants.lower_main_run_key, False)
+                    time.sleep(2)
+                    self.init_MAX_Size = fastformh['lower_max_size']
+                    self.deal_amount = fastformh['lower_deal_amount']
+                    self.expected_profit = fastformh['lower_expected_profit']
+                    self.basis_create = fastformh['lower_basis_create']
+                    self.lower__back_distant = fastformh['lower_back_distant']
+                    self.step_price = fastformh['lower_step_price']
 
-                time.sleep(3)
-            except Exception:
+                    self.conn.set(constants.lower__max_size_key, self.MAX_Size)
+                    self.conn.set(constants.lower__deal_amount_key, self.deal_amount)
+                    self.conn.set(constants.lower__expected_profit_key, self.expected_profit)
+                    self.conn.set(constants.lower__back_distant_key, self.lower__back_distant)
+                    self.conn.set(constants.lower__basic_create_key, self.basis_create)
+                    self.conn.set(constants.lower__step_price_key, self.step_price)
+
+                    if beforestatus:
+                        self.conn.set(constants.lower_main_run_key, True)
+                    self.conn.delete("fastforml")
+            except:
                 pass
 
 
-mex_contract_type=constants.lower_mex_contract_type
-t = TradeMexAndOk(contract_type=constants.lower_contract_type, max_size=constants.lower_max_size, deal_amount=constants.lower_deal_amount,
-                  expected_profit=constants.lower_expected_profit, basis_create=constants.lower_basis_create, step_price=constants.lower_step_price)
-ws = threading.Thread(target=t.ws_thread)
-pm = threading.Thread(target=t.position_mon)
-#splitposcheck = threading.Thread(target=t.splitposcheck)
-buy = threading.Thread(target=t.submit_buy_order)
-sell = threading.Thread(target=t.submit_sell_order)
-ping_thread = threading.Thread(target=t.ping_thread)
+    def start(self):
+        logger.info("###############################Lower 跑起来了，哈哈哈");
+        #self.server.test()
+        if not self.status:
+            self.status = True
+            pm = threading.Thread(target=self.position_mon)
+            pm.setDaemon(True)
+            pm.start()
 
-pm.setDaemon(True)
-ws.setDaemon(True)
-buy.setDaemon(True)
-sell.setDaemon(True)
-ping_thread.setDaemon(True)
-#splitposcheck.setDaemon(True)
+            sell = threading.Thread(target=self.submit_sell_order)
+            sell.setDaemon(True)
+            sell.start()
 
-ws.start()
-time.sleep(5)
-pm.start()
-time.sleep(1)
-sell.start()
-buy.start()
-#splitposcheck.start()
-ping_thread.start()
-redis = Conn_db()
-redis.set(constants.lower_server,True)
-status = True
-while status:
-    status = redis.get(constants.lower_server)
-    time.sleep(2)
-    pass
-logger.info("###I'm quit###########")
-t.cancel_all()
+            buy = threading.Thread(target=self.submit_buy_order)
+            buy.setDaemon(True)
+            buy.start()
+
+            check = threading.Thread(target=self.setting_check)
+            check.setDaemon(True)
+            check.start()
+
+    def stop(self):
+        if self.status:
+            self.status = False
+            time.sleep(3)
+            self.okcoin.cancel_all(self.contract_type)
+
