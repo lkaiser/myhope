@@ -113,6 +113,7 @@ def admin():
 
 
     ok_holding = okcoin.get_position(constants.higher_contract_type)['holding'][0]
+    #ok_holding = []
     mex_holding = mex.get_position(constants.higher_mex_contract_type)
     #print mex_holding
 

@@ -17,8 +17,7 @@ from db.rediscon import Conn_db
 from market_maker import bitmex
 
 import sys
-import os
-#parentpath = os.path.dirname(sys.path[0])
+
 
 LOG_FILE = sys.path[0]+'/high.log'
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes = 1024*1024*4, backupCount = 10) # 实例化handler
@@ -38,7 +37,6 @@ class TradeMexAndOk(object):
                  expected_profit=5, basis_create=40, step_price=1.5):
         key = constants.coin_key
         skey = constants.coin_skey
-
         mex_key = constants.mex_key
         mex_skey = constants.mex_skey
         bmext = bitmex.BitMEX(base_url='https://www.bitmex.com/api/v1/',
@@ -49,6 +47,7 @@ class TradeMexAndOk(object):
         self.okcoin.cancel_all(self.contract_type)
         self._mex = bitmex_api.Bitmex(mex_skey,mex_key)
         self.ws = websocket.WebSocket()
+
         self.q_asks_price = Queue.Queue(1)
         self.q_bids_price = Queue.Queue(1)
         self.mex_bids_price = None
@@ -73,6 +72,7 @@ class TradeMexAndOk(object):
         self.conn.set(constants.higher_step_price_key, self.step_price)
         self.mexliquidation = mexliquidation.mexliquidation(self.mex,self)
         self.mexliquidation.start()
+
         okposition = self.okcoin.get_position(self.contract_type)['holding'][0]
         self.ok_sell_balance = 0
         self.mex_buy_balance = 0
@@ -104,6 +104,7 @@ class TradeMexAndOk(object):
 
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
+
     def cal_order(self,okposition,mexposition):
         sposition = self.conn.get(self.slipkey)
         if not sposition:
@@ -302,8 +303,6 @@ class TradeMexAndOk(object):
                 if amount_change < 0:#有仓位被平
                     okprice = 0
                     buy_price = round(self.mex_asks_price - 18, 1)
-                    #logger.info("avarage ok deal price" + bytes(okprice) + " while mex ask price =" + bytes(self.mex_asks_price))
-                    #logger.info("mex_asks_price = "+bytes(self.mex_asks_price) + " allow exced area= "+ bytes(2))
                     # 按bais价格从高到低减,排序
 
                     last_pos = None
@@ -327,15 +326,8 @@ class TradeMexAndOk(object):
 
                         self.conn.set(self.slipkey, self.split_position)
                         logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                        #logger.info(self.conn.get(self.slipkey))
-                        #logger.info("@@@@@@@@@okprice=="+bytes(self.lastevenuprice))
-
-                        #logger.info("@@@@@@@@@now_create==" + bytes(now_create))
-                        #logger.info("@@@@@@@@@higher_back_distant==" + bytes(constants.higher_back_distant))
-                        #logger.info("@@@@@@@@@higher_basic_create_key==" + constants.higher_basic_create_key)
-                        self.basis_create = round(now_create + self.higher_back_distant,3)
+                        self.basis_create = round(now_create + self.higher_back_distant - self.expected_profit,3)
                         self.conn.set(constants.higher_basic_create_key, self.basis_create)
-                        #self.basis_create = now_create +8
                         self.balancelock.release()
                         logger.info("#####balancelock release")
 
@@ -357,7 +349,7 @@ class TradeMexAndOk(object):
                 time.sleep(1.25)
                 logger.info(e)
                 self.okcoin.cancel_all(self.contract_type)
-            time.sleep(0.5)
+            time.sleep(1)
             #end = datetime.datetime.now()
             #logger.info("############position3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
@@ -411,8 +403,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 550000:
-                        time.sleep(round((550000 - escape) / 1000000.0, 2))
+                    if escape < 600000:
+                        time.sleep(round((600000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -431,6 +423,10 @@ class TradeMexAndOk(object):
                         continue #取消状态只有2种，取消成功或者20015交易成功无法取消,其它状态都跳回重新取消
                     else:
                         cycletimes = 0
+                        if cancel_result['error_code'] == 20015:
+                            self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
+                            while self.amountsigal < 2:
+                                time.sleep(2)
                 else:
                     cycletimes = 0
             order_id[:] = []
@@ -496,8 +492,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 550000:
-                        time.sleep(round((550000-escape)/1000000.0,2))
+                    if escape < 600000:
+                        time.sleep(round((600000-escape)/1000000.0,2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -517,7 +513,7 @@ class TradeMexAndOk(object):
                     else:
                         self.amountsigal = 0              #设置amount更新信号，从0开始计数，更新2次以上后确认basis_create已经更新
                         while self.amountsigal <2:
-                            time.sleep(3)
+                            time.sleep(2)
                         cycletimes = 0
                 else:
                     cycletimes = 0

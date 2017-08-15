@@ -153,6 +153,7 @@ class OkCoinComApi(object):
         p['contract_type'] = contract_type
         p['sign'] = self.sign(p)
         req = requests.post(url, headers=self.headers, params=p, timeout=self.timeout)
+        #print req
         return req.json()
 
     @retry(stop_max_attempt_number=500000, wait_fixed=2000)
