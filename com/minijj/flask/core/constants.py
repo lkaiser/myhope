@@ -23,6 +23,8 @@ trade_server = "trade_server"
 higher_server = "higher_server"
 lower_server = "lower_server"
 
+temp_miss_amount = 3
+
 
 higher_split_position = coin_skey + "higher"
 lower_split_position = coin_skey + "lower"

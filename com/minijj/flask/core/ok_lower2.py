@@ -386,7 +386,7 @@ class OkLower(object):
                     beforestatus = self.conn.get(constants.lower_main_run_key)
                     self.conn.set(constants.lower_main_run_key, False)
                     time.sleep(2)
-                    self.init_MAX_Size = fastformh['lower_max_size']
+                    self.MAX_Size = fastformh['lower_max_size']
                     self.deal_amount = fastformh['lower_deal_amount']
                     self.expected_profit = fastformh['lower_expected_profit']
                     self.basis_create = fastformh['lower_basis_create']

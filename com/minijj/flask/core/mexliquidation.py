@@ -123,7 +123,7 @@ class mexliquidation(object):
                                     partdel += cel[0]['cumQty']
                             #应该还有部分成交的情形
                         #if waiting % 2 == 0:
-                        slipp += 5
+                        slipp += 10
                     except Exception, e:
                         logger.info(e)
                         logger.info('###异常订单### orderID =' + rst['orderID'])
@@ -195,7 +195,7 @@ class mexliquidation(object):
                                                 cel[0]['avgPx'], order[2], order[4], order[0] - cel[0]['avgPx'] - order[4]))
                                     self.conn.set(constants.trade_his_key, his)
                                 else:
-                                    logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(cel[0]['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] - order[4] + order[0] - rst['avgPx']) + " #######")
+                                    logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(cel[0]['avgPx']) + "##amount="+bytes(order[2])+" ##liquid_bais=" + bytes(order[4]) + "平仓滑点 " + bytes(order[3] - order[4] + order[0] - cel[0]['avgPx']) + " #######")
                                     his = self.conn.get(constants.trade_his_key)
                                     his.append(
                                         (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 2, order[0],
@@ -208,8 +208,9 @@ class mexliquidation(object):
                                 if cel[0]['cumQty']:
                                     partdel += cel[0]['cumQty']
                         #if waiting % 6 == 0:
-                        slipp += 5
-                    except Exception:
+                        slipp += 10
+                    except Exception, e:
+                        logger.info(e)
                         logger.info('###异常订单### orderID ='+rst['orderID'])
                         self.mex.cancel(rst['orderID'])
                         break

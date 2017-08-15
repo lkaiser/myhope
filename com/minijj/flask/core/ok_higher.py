@@ -87,6 +87,7 @@ class TradeMexAndOk(object):
 
         self.slipkey = constants.higher_split_position
         self.lastevenuprice = 0
+        self.lastsellprice = 0
         self.lastsub = datetime.datetime.now()
         self.sublock = threading.Lock()
         self.amountsigal = 0
@@ -197,7 +198,7 @@ class TradeMexAndOk(object):
                     beforestatus = self.conn.get(constants.higher_main_run_key)
                     self.conn.set(constants.higher_main_run_key, False)
                     time.sleep(2)
-                    self.init_MAX_Size = fastformh['higher_max_size']
+                    self.MAX_Size = fastformh['higher_max_size']
                     self.deal_amount = fastformh['higher_deal_amount']
                     self.expected_profit = fastformh['higher_expected_profit']
                     self.basis_create = fastformh['higher_basis_create']
@@ -283,9 +284,12 @@ class TradeMexAndOk(object):
 
                 #OKcoin挂单成交后，mex立刻以市价做出反向操作
                 if amount_change > 0:
-                    okprice = (new_holding['sell_price_avg'] * new_holding['sell_amount'] - init_holding[
-                        'sell_price_avg'] * init_holding['sell_amount']) / amount_change
-                    sell_price = round(self.mex_bids_price + 8, 1)#以成交为第一目的
+                    holdokprice = (new_holding['sell_price_avg'] * (new_holding['sell_amount']) - init_holding['sell_price_avg'] * (init_holding['sell_amount'])) / amount_change
+                    okprice = self.lastsellprice
+                    logger.info("###########holding caculated price="+bytes(holdokprice) +" while last sell price= "+bytes(okprice))
+                    #logger.info("################new_holding.sell_price_avg = "+bytes(new_holding['sell_price_avg'])+" new_holding.sell_amount="+bytes(new_holding['sell_amount']))
+                    #logger.info("################init_holding.sell_price_avg = " + bytes(init_holding['sell_price_avg']) + " init_holding.sell_amount=" + bytes(init_holding['sell_amount']))
+                    sell_price = round(self.mex_bids_price + 18, 1)#以成交为第一目的
                     logger.info(init_holding)
                     logger.info(new_holding)
                     logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.mex_bids_price))
@@ -297,7 +301,7 @@ class TradeMexAndOk(object):
 
                 if amount_change < 0:#有仓位被平
                     okprice = 0
-                    buy_price = round(self.mex_asks_price - 8, 1)
+                    buy_price = round(self.mex_asks_price - 18, 1)
                     #logger.info("avarage ok deal price" + bytes(okprice) + " while mex ask price =" + bytes(self.mex_asks_price))
                     #logger.info("mex_asks_price = "+bytes(self.mex_asks_price) + " allow exced area= "+ bytes(2))
                     # 按bais价格从高到低减,排序
@@ -308,9 +312,13 @@ class TradeMexAndOk(object):
                         self.split_position.sort(key=lambda x: x[1])
                         left_amount = -amount_change
 
+                        lastdiff = 0
+                        okprice = self.lastevenuprice
+                        now_create = okprice - self.mex_asks_price  #两种算法，1用当前差价  2 用split_position最新平仓差价
                         while(self.split_position and left_amount>0):
                             last_pos = self.split_position.pop()
                             left_amount = left_amount-last_pos[0]
+                            now_create = last_pos[1]
                             if(left_amount<0):
                                 self.split_position.append((-left_amount,last_pos[1]))
                                 break
@@ -321,8 +329,7 @@ class TradeMexAndOk(object):
                         logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
                         #logger.info(self.conn.get(self.slipkey))
                         #logger.info("@@@@@@@@@okprice=="+bytes(self.lastevenuprice))
-                        okprice = self.lastevenuprice
-                        now_create = okprice - self.mex_asks_price
+
                         #logger.info("@@@@@@@@@now_create==" + bytes(now_create))
                         #logger.info("@@@@@@@@@higher_back_distant==" + bytes(constants.higher_back_distant))
                         #logger.info("@@@@@@@@@higher_basic_create_key==" + constants.higher_basic_create_key)
@@ -530,6 +537,7 @@ class TradeMexAndOk(object):
                         logger.info("###sublock acuire")
                         self.sublock.release()
                         logger.info("#####sublock release")
+                        self.lastsellprice = price
                         logger.info("下单，下单，买买买 amount= "+bytes(amount)+  "mex price = "+bytes(price-self.basis_create)+" coin price= "+bytes(price) +" basis_create= "+bytes(self.basis_create))
                         trade_back = self.okcoin.trade(self.contract_type, price, amount, 2)
                         oid = trade_back['order_id']

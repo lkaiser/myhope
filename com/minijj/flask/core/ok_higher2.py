@@ -28,7 +28,6 @@ class OkHigher(object):
         self.higher_back_distant = higher_back_distant
         self.step_price = step_price
         self.init_basis_create = basis_create
-        self.init_MAX_Size = max_size
         self.status = False
 
         self.conn = Conn_db()
@@ -383,7 +382,7 @@ class OkHigher(object):
                     beforestatus = self.conn.get(constants.higher_main_run_key)
                     self.conn.set(constants.higher_main_run_key, False)
                     time.sleep(3)
-                    self.init_MAX_Size = fastformh['higher_max_size']
+                    self.MAX_Size = fastformh['higher_max_size']
                     self.deal_amount = fastformh['higher_deal_amount']
                     self.expected_profit = fastformh['higher_expected_profit']
                     self.basis_create = fastformh['higher_basis_create']
