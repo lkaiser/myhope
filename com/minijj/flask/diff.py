@@ -9,10 +9,7 @@ import websocket
 
 import dataStore
 
-import sys
-import os
-#parentpath = os.path.dirname(sys.path[0])
-#sys.path.append(parentpath)
+import core.constants as constants
 
 from core.db import rediscon
 
@@ -58,11 +55,15 @@ class Diff(object):
         self.ws_ok = websocket.WebSocket()
         self.ws_mex = websocket.WebSocket()
         self.ok_price = None
+        self.ok_askprice = None
         self.mex_price = None
+        self.mex_bidprice = None
+
         self.deal_amount = deal_amount
         self.renew = False
         self.list = CycleList(maxsize)
         self.recent = CycleList(1200)
+        self.recent2 = CycleList(1200)
         self.store = dataStore.DataStore()
         self.conn = rediscon.Conn_db()
 
@@ -144,8 +145,14 @@ class Diff(object):
                     ws_data = json.loads(mex_data)
                     if 'action' in ws_data and 'types' not in ws_data:
                         ws_data = ws_data['data'][0]
+
+                        #print "mex asks",ws_data['asks']
+                        #print "mex bids",ws_data['bids']
                         self.mex_price = \
                         self.depth(self.deal_amount * 100, ws_data['asks'])[0]
+
+                        self.mex_bidprice = \
+                            self.depth(self.deal_amount * 100, ws_data['bids'])[0]
                         #print ws_data
                         #print 'seconds = ',ws_data['timestamp'][18:19]
                         #print 'date = ', ws_data['timestamp'][0:19]
@@ -172,11 +179,21 @@ class Diff(object):
                         #print ws_data
                         if ws_data['channel'] == 'ok_sub_futureusd_btc_depth_quarter_60':
                             l = ws_data['data']['bids']
+                            #print "bids",l[0]
                             k = []
                             for i in l:
                                 k.append([float(i[0]),float(i[1])])
                             # l.reverse()
                             self.ok_price = self.depth(self.deal_amount,k)[0]
+
+                            l = ws_data['data']['asks']
+                            l.reverse()
+                            #print "asks",l[0]
+                            k = []
+                            for i in l:
+                                k.append([float(i[0]), float(i[1])])
+                            # l.reverse()
+                            self.ok_askprice = self.depth(self.deal_amount, k)[0]
                             # print "OK",self.ok_price
                             # tst = ws_data['data']['timestamp']
                             # if not (tst / 1000) % 5:
@@ -198,6 +215,10 @@ class Diff(object):
                 if self.mex_price and self.ok_price:
                     self.recent.put((datetime.datetime.utcnow(), round(self.mex_price, 3), round(self.ok_price, 3)))
                     self.conn.set('recent', self.recent.orderesult())
+
+
+
+
                 if not count:
                     if self.mex_price and self.ok_price:
                         print 'systerm utc time=',datetime.datetime.utcnow()
@@ -209,9 +230,23 @@ class Diff(object):
 
     def diff1sca(self):
         if self.mex_price and self.ok_price:
-            if (type(self.mex_price) == float and type(self.ok_price) == float):
-                self.recent.put((datetime.datetime.utcnow(), round(self.mex_price, 3), round(self.ok_price, 3)))
+            p1 = self.mex_price
+            p2 = self.ok_price
+            p3 = self.ok_askprice
+            p4 = self.mex_bidprice
+            if (type(p1) == float and type(p2) == float  and type(p3) == float  and type(p4) == float):
+                self.conn.set(constants.ok_mex_price, (datetime.datetime.utcnow(), round(p1, 3), round(p4, 3),round(p3, 3), round(p2, 3)))
+                #print self.conn.get(constants.ok_mex_price)
+                self.recent.put((datetime.datetime.utcnow(), round(p1, 3), round(p2, 3)))
                 self.conn.set('recent', self.recent.orderesult())
+
+                self.recent2.put((datetime.datetime.utcnow(), round(p1, 3), round(p4, 3),
+                                  round(p3, 3), round(p2, 3)))
+                #print (datetime.datetime.utcnow(), round(p1, 3), round(self.mex_bidprice, 3),
+                #       round(self.ok_askprice, 3), round(self.ok_price, 3))
+                self.conn.set('recent2', self.recent2.orderesult())
+
+                #print "recent2 ==",self.recent2.orderesult()[1:5]
         t = Timer(1, self.diff1sca).start()
 
     def diff10sca(self):

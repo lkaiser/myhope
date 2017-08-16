@@ -23,7 +23,7 @@ trade_server = "trade_server"
 higher_server = "higher_server"
 lower_server = "lower_server"
 
-temp_miss_amount = 3
+ok_mex_price = "ok_mex_price"
 
 
 higher_split_position = coin_skey + "higher"

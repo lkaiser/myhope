@@ -152,13 +152,11 @@ class TradeMexAndOk(object):
         print "redefine_basic_create"
         self.basis_create = self.init_basis_create
 
-    def get_ok_sell_contract_amount(self):  # OK空单持仓amount
-        return self.okcoin.get_position(self.contract_type)['holding'][0]['sell_amount']
 
     #统计mex 3档行情买卖平均价
     def calc_mex_order_price(self, recv_data):
-        asks_price = self.calc_price(json.loads(recv_data)['data'][0]['asks'][0:3])
-        bids_price = self.calc_price(json.loads(recv_data)['data'][0]['bids'][0:3])
+        asks_price = self.calc_price(json.loads(recv_data)['data'][0]['asks'][0:5])
+        bids_price = self.calc_price(json.loads(recv_data)['data'][0]['bids'][0:5])
         return asks_price, bids_price
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000)
@@ -403,8 +401,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 600000:
-                        time.sleep(round((600000 - escape) / 1000000.0, 2))
+                    if escape < 650000:
+                        time.sleep(round((650000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -442,6 +440,13 @@ class TradeMexAndOk(object):
                     price = round(price, 2) + baiss - self.expected_profit
                     self.lastevenuprice = price
                     trade_back = {}
+
+                    okprice = self.conn.get(constants.ok_mex_price)
+                    logger.info(
+                        "#######current ok ask price =" + bytes(okprice[3]) + " while wanna price=" + bytes(price))
+                    if (okprice[3] - price > 5):
+                        continue
+
                     try:
                         if highest[0] > 0:
                             amount = highest[0]
@@ -492,8 +497,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 600000:
-                        time.sleep(round((600000-escape)/1000000.0,2))
+                    if escape < 650000:
+                        time.sleep(round((650000-escape)/1000000.0,2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -521,6 +526,12 @@ class TradeMexAndOk(object):
             end = datetime.datetime.now()
             logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
+
+            okprice = self.conn.get(constants.ok_mex_price)
+            logger.info("#######current ok bid price =" + bytes(okprice[4]) + " while wanna price=" + bytes(price))
+            if (price - okprice[4] > 5):
+                continue
+
             trade_back = {}
             try:
                 if self.ok_sell_balance < self.MAX_Size:

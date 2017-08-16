@@ -325,6 +325,17 @@ def recent10min():
         rs.append(el)
     return json.dumps(rs, cls=CJsonEncoder)
 
+@app.route('/recent210m/')
+def recent210min():
+    oklist = redis.get('recent2')
+    size = len(oklist) - 1
+    rs = []
+    start = size - 600 if size - 600 > 0 else 0
+    for i in range(start, size, 1):
+        el = (oklist[i][0]+datetime.timedelta(hours=8), round(oklist[i][3] - oklist[i][2], 2))
+        rs.append(el)
+    return json.dumps(rs, cls=CJsonEncoder)
+
 @app.route('/recent30m/')
 def recent5m():
     oklist = redis.get('list')
