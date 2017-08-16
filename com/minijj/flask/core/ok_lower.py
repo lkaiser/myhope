@@ -157,8 +157,8 @@ class TradeMexAndOk(object):
 
     #统计mex 3档行情买卖平均价
     def calc_mex_order_price(self, recv_data):
-        asks_price = self.calc_price(json.loads(recv_data)['data'][0]['asks'][0:3])
-        bids_price = self.calc_price(json.loads(recv_data)['data'][0]['bids'][0:3])
+        asks_price = self.calc_price(json.loads(recv_data)['data'][0]['asks'][0:5])
+        bids_price = self.calc_price(json.loads(recv_data)['data'][0]['bids'][0:5])
         return asks_price, bids_price
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000)
@@ -271,7 +271,6 @@ class TradeMexAndOk(object):
             init_holding = okposition[0]
         while 1:
             runmain = self.conn.get(constants.lower_main_run_key)
-            print "##############what the fuck",runmain
             if not runmain:
                 logger.info("###############lower position suspend##################")
                 time.sleep(2)

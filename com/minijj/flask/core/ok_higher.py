@@ -309,7 +309,6 @@ class TradeMexAndOk(object):
                         self.split_position.sort(key=lambda x: x[1])
                         left_amount = -amount_change
 
-                        lastdiff = 0
                         okprice = self.lastevenuprice
                         now_create = okprice - self.mex_asks_price  #两种算法，1用当前差价  2 用split_position最新平仓差价
                         while(self.split_position and left_amount>0):
@@ -408,25 +407,23 @@ class TradeMexAndOk(object):
                     logger.info("#####sublock release")
                     logger.info("下单，撤单，平仓撤单")
                     cancel_result = self.okcoin.cancel_orders(self.contract_type, [order_id[0][1]])
-
-                if 'error_code' in cancel_result:
-                    logger.info(cancel_result)
-                    if cancel_result['error_code'] != 20015 and cancel_result['error_code'] != 20016:
-                        
-                        logger.info("##########注意，新的错误来了#############")
-                        time.sleep(2)
-                        cycletimes += 1
-                        if cycletimes>20:
-                            logger.info("##############terrible sycle on cancel buy order##########")
-                        continue #取消状态只有2种，取消成功或者20015交易成功无法取消,其它状态都跳回重新取消
+                    if 'error_code' in cancel_result:
+                        logger.info(cancel_result)
+                        if cancel_result['error_code'] != 20015 and cancel_result['error_code'] != 20016:
+                            logger.info("##########注意，新的错误来了#############")
+                            time.sleep(2)
+                            cycletimes += 1
+                            if cycletimes>20:
+                                logger.info("##############terrible sycle on cancel buy order##########")
+                            continue #取消状态只有2种，取消成功或者20015交易成功无法取消,其它状态都跳回重新取消
+                        else:
+                            cycletimes = 0
+                            if cancel_result['error_code'] == 20015:
+                                self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
+                                while self.amountsigal < 2:
+                                    time.sleep(2)
                     else:
                         cycletimes = 0
-                        if cancel_result['error_code'] == 20015:
-                            self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
-                            while self.amountsigal < 2:
-                                time.sleep(2)
-                else:
-                    cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
             logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds")
