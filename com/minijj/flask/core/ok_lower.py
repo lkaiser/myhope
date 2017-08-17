@@ -443,6 +443,13 @@ class TradeMexAndOk(object):
                     price = round(price, 2) + baiss + self.expected_profit
                     self.lastevenuprice = price
                     trade_back = {}
+
+                    okprice = self.conn.get(constants.ok_mex_price)
+                    logger.info(
+                        "#######current ok ask price =" + bytes(okprice[4]) + " while wanna price=" + bytes(price))
+                    if (price - okprice[4] > 5):
+                        continue
+
                     try:
                         if highest[0] > 0:
                             amount = highest[0]
@@ -521,6 +528,12 @@ class TradeMexAndOk(object):
             end = datetime.datetime.now()
             logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
+
+            okprice = self.conn.get(constants.ok_mex_price)
+            logger.info("#######current ok ask price =" + bytes(okprice[3]) + " while wanna price=" + bytes(price))
+            if (okprice[3] - price > 5):
+                continue
+
             trade_back = {}
             try:
                 if self.ok_sell_balance < self.MAX_Size:

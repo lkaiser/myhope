@@ -400,8 +400,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 650000:
-                        time.sleep(round((650000 - escape) / 1000000.0, 2))
+                    if escape < 500000:
+                        time.sleep(round((500000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -494,8 +494,8 @@ class TradeMexAndOk(object):
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 650000:
-                        time.sleep(round((650000-escape)/1000000.0,2))
+                    if escape < 500000:
+                        time.sleep(round((500000-escape)/1000000.0,2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
