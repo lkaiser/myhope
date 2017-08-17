@@ -13,7 +13,7 @@ import constants as constants
 from market_maker import bitmex
 
 # 自动平仓，按时间、获利优先原则
-logger = logging.getLogger('tst')
+logger = logging.getLogger('root')
 class mexliquidation(object):
     def __init__(self, mex,server):
         self.mex = mex

@@ -25,7 +25,7 @@ fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
 formatter = logging.Formatter(fmt)  # 实例化formatter
 handler.setFormatter(formatter)  # 为handler添加formatter
 
-logger = logging.getLogger('tst')  # 获取名为tst的logger
+logger = logging.getLogger('root')  # 获取名为tst的logger
 logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
 
@@ -206,12 +206,12 @@ class TradeMexAndOk(object):
                     self.lower__back_distant = fastformh['lower_back_distant']
                     self.step_price = fastformh['lower_step_price']
 
-                    self.conn.set(constants.lower__max_size_key, self.MAX_Size)
-                    self.conn.set(constants.lower__deal_amount_key, self.deal_amount)
-                    self.conn.set(constants.lower__expected_profit_key, self.expected_profit)
-                    self.conn.set(constants.lower__back_distant_key, self.lower__back_distant)
-                    self.conn.set(constants.lower__basic_create_key, self.basis_create)
-                    self.conn.set(constants.lower__step_price_key, self.step_price)
+                    self.conn.set(constants.lower_max_size_key, self.MAX_Size)
+                    self.conn.set(constants.lower_deal_amount_key, self.deal_amount)
+                    self.conn.set(constants.lower_expected_profit_key, self.expected_profit)
+                    self.conn.set(constants.lower_back_distant_key, self.lower__back_distant)
+                    self.conn.set(constants.lower_basic_create_key, self.basis_create)
+                    self.conn.set(constants.lower_step_price_key, self.step_price)
 
                     if beforestatus:
                         self.conn.set(constants.lower_main_run_key, True)
