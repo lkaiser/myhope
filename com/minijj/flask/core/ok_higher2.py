@@ -9,7 +9,7 @@ import constants as constants
 
 from db.rediscon import Conn_db
 
-logger = logging.getLogger('tst')  # 获取名为tst的logger
+logger = logging.getLogger('root')  # 获取名为tst的logger
 
 class OkHigher(object):
     def __init__(self,okcoin,mex,_mex,market,mexliquidation, contract_type='quarter', max_size=24, deal_amount=6,
@@ -46,11 +46,10 @@ class OkHigher(object):
             self.mex_buy_balance = self.ok_sell_balance
         self.balancelock = threading.Lock()
 
-        #self.conn.set(constants.higher_buy_run_key, True)
-        #self.conn.set(constants.higher_sell_run_key, True)
-        #self.conn.set(constants.higher_main_run_key, True)
+
         self.slipkey = constants.higher_split_position
         self.lastevenuprice = 0
+        self.lastsellprice = 0
         self.lastsub = datetime.datetime.now()
         self.sublock = threading.Lock()
         self.amountsigal = 0
@@ -92,20 +91,17 @@ class OkHigher(object):
 
                 # OKcoin挂单成交后，mex立刻以市价做出反向操作
                 if amount_change > 0:
-                    okprice = (new_holding['sell_price_avg'] * new_holding['sell_amount'] - init_holding[
-                        'sell_price_avg'] * init_holding['sell_amount']) / amount_change
+                    holdokprice = (new_holding['sell_price_avg'] * (new_holding['sell_amount']) - init_holding['sell_price_avg'] * (init_holding['sell_amount'])) / amount_change
+                    okprice = self.lastsellprice
+                    logger.info("###########holding caculated price=" + bytes(holdokprice) + " while last sell price= " + bytes(okprice))
                     sell_price = round(self.market.mex_bids_price + 8, 1)  # 以成交为第一目的
                     logger.info(init_holding)
                     logger.info(new_holding)
-                    logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(
-                        self.market.mex_bids_price))
+                    logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(self.mex_bids_price))
                     # logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
-                    logger.info(
-                        "################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                    self.mexliquidation.suborder(okprice, sell_price, amount_change, self.expected_profit,
-                                                 self.basis_create, 'buy')
-                    self.basis_create += round(float(amount_change) / float(self.deal_amount) * float(self.step_price),
-                                               3)
+                    logger.info("################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
+                    self.mexliquidation.suborder(okprice, sell_price, amount_change, self.expected_profit, self.basis_create, 'buy')
+                    self.basis_create += round(float(amount_change) / float(self.deal_amount) * float(self.step_price), 3)
                     self.conn.set(constants.higher_basic_create_key, self.basis_create)
 
                 if amount_change < 0:  # 有仓位被平
@@ -121,9 +117,12 @@ class OkHigher(object):
                         self.split_position.sort(key=lambda x: x[1])
                         left_amount = -amount_change
 
-                        while (self.split_position and left_amount > 0):
+                        okprice = self.lastevenuprice
+                        now_create = okprice - self.mex_asks_price  #两种算法，1用当前差价  2 用split_position最新平仓差价
+                        while(self.split_position and left_amount>0):
                             last_pos = self.split_position.pop()
                             left_amount = left_amount - last_pos[0]
+                            now_create = last_pos[1]
                             if (left_amount < 0):
                                 self.split_position.append((-left_amount, last_pos[1]))
                                 break
@@ -131,20 +130,13 @@ class OkHigher(object):
                             print "操你大爷，都卖光了还要卖？"
 
                         self.conn.set(self.slipkey, self.split_position)
-                        logger.info(
-                            "################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                        # logger.info(self.conn.get(self.slipkey))
-                        # logger.info("@@@@@@@@@okprice=="+bytes(self.lastevenuprice))
-                        okprice = self.lastevenuprice
-                        now_create = okprice - self.market.mex_asks_price
-                        self.basis_create = round(now_create + self.higher_back_distant, 3)
+                        logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
+                        self.basis_create = round(now_create + self.higher_back_distant - self.expected_profit, 3)
                         self.conn.set(constants.higher_basic_create_key, self.basis_create)
-                        # self.basis_create = now_create +8
                         self.balancelock.release()
                         logger.info("#####balancelock release")
 
-                    self.mexliquidation.suborder(okprice, buy_price, amount_change, self.expected_profit, last_pos[1],
-                                                 'sell')
+                    self.mexliquidation.suborder(okprice, buy_price, amount_change, self.expected_profit, last_pos[1], 'sell')
                 if (self.amountsigal > 10000):
                     self.amountsigal = 1
                 else:
@@ -212,8 +204,7 @@ class OkHigher(object):
             start = datetime.datetime.now()
             price = self.market.q_bids_price.get()
             end = datetime.datetime.now()
-            logger.info("############buy order1 spend" + bytes(
-                ((end - start).microseconds) / 1000.0) + "milli seconds ,q_asks_price= " + bytes(price))
+            logger.info("############buy order1 spend" + bytes(((end - start).microseconds) / 1000.0) + "milli seconds ,q_asks_price= " + bytes(price))
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
@@ -225,25 +216,26 @@ class OkHigher(object):
                     logger.info("#####sublock release")
                     logger.info("下单，撤单，平仓撤单")
                     cancel_result = self.okcoin.cancel_orders(self.contract_type, [order_id[0][1]])
-
-                if 'error_code' in cancel_result:
-                    logger.info(cancel_result)
-                    if cancel_result['error_code'] != 20015 and cancel_result['error_code'] != 20016:
-
-                        logger.info("##########注意，新的错误来了#############")
-                        time.sleep(2)
-                        cycletimes += 1
-                        if cycletimes > 20:
-                            logger.info("##############terrible sycle on cancel buy order##########")
-                        continue  # 取消状态只有2种，取消成功或者20015交易成功无法取消,其它状态都跳回重新取消
+                    if 'error_code' in cancel_result:
+                        logger.info(cancel_result)
+                        if cancel_result['error_code'] != 20015 and cancel_result['error_code'] != 20016:
+                            logger.info("##########注意，新的错误来了#############")
+                            time.sleep(2)
+                            cycletimes += 1
+                            if cycletimes > 20:
+                                logger.info("##############terrible sycle on cancel buy order##########")
+                            continue  # 取消状态只有2种，取消成功或者20015交易成功无法取消,其它状态都跳回重新取消
+                        else:
+                            cycletimes = 0
+                            if cancel_result['error_code'] == 20015:
+                                self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
+                                while self.amountsigal < 2:
+                                    time.sleep(2)
                     else:
                         cycletimes = 0
-                else:
-                    cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info(
-                "############buy order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            logger.info("############buy order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
             if self.balancelock.acquire():
                 logger.info("#############balancelock acuire")
                 if self.split_position:
@@ -254,6 +246,13 @@ class OkHigher(object):
                     price = round(price, 2) + baiss - self.expected_profit
                     self.lastevenuprice = price
                     trade_back = {}
+
+                    okprice = self.conn.get(constants.ok_mex_price)
+                    logger.info(
+                        "#######current ok ask price =" + bytes(okprice[3]) + " while wanna price=" + bytes(price))
+                    if (okprice[3] - price > 5):
+                        continue
+
                     try:
                         if highest[0] > 0:
                             amount = highest[0]
@@ -264,9 +263,7 @@ class OkHigher(object):
                                 self.lastsub = datetime.datetime.now()
                                 self.sublock.release()
                                 logger.info("#####sublock release")
-                                logger.info("下单，下单，平平平 amount= " + bytes(amount) + "mex price = " + bytes(
-                                    price + self.expected_profit - baiss) + " coin price = " + bytes(
-                                    price) + " baiss= " + bytes(baiss))
+                                logger.info("下单，下单，平平平 amount= " + bytes(amount) + "mex price = " + bytes(price + self.expected_profit - baiss) + " coin price = " + bytes(price) + " baiss= " + bytes(baiss))
                                 trade_back = self.okcoin.trade(self.contract_type, price, amount, 4)
                                 oid = trade_back['order_id']
                                 order_id.append([amount, str(oid), datetime.datetime.now()])
@@ -281,8 +278,7 @@ class OkHigher(object):
                     self.balancelock.release()
                     logger.info("################balancelock release")
             end = datetime.datetime.now()
-            logger.info(
-                "############buy order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            logger.info("############buy order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
     def submit_sell_order(self):
         order_id = []
@@ -304,8 +300,7 @@ class OkHigher(object):
             start = datetime.datetime.now()
             price = self.market.q_asks_price.get()
             end = datetime.datetime.now()
-            logger.info("############sell order1 spend " + bytes(
-                ((end - start).microseconds) / 1000.0) + " milli seconds ,q_bids_price= " + bytes(price))
+            logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ,q_bids_price= " + bytes(price))
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
@@ -337,9 +332,14 @@ class OkHigher(object):
                     cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info(
-                "############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
+
+            okprice = self.conn.get(constants.ok_mex_price)
+            logger.info("#######current ok bid price =" + bytes(okprice[4]) + " while wanna price=" + bytes(price))
+            if (price - okprice[4] > 5):
+                continue
+
             trade_back = {}
             try:
                 if self.ok_sell_balance < self.MAX_Size:
@@ -352,9 +352,8 @@ class OkHigher(object):
                         logger.info("###sublock acuire")
                         self.sublock.release()
                         logger.info("#####sublock release")
-                        logger.info("下单，下单，买买买 amount= " + bytes(amount) + "mex price = " + bytes(
-                            price - self.basis_create) + " coin price= " + bytes(price) + " basis_create= " + bytes(
-                            self.basis_create))
+                        self.lastsellprice = price
+                        logger.info("下单，下单，买买买 amount= " + bytes(amount) + "mex price = " + bytes(price - self.basis_create) + " coin price= " + bytes(price) + " basis_create= " + bytes(self.basis_create))
                         trade_back = self.okcoin.trade(self.contract_type, price, amount, 2)
                         oid = trade_back['order_id']
                         order_id.append([amount, str(oid), datetime.datetime.now()])
@@ -367,8 +366,7 @@ class OkHigher(object):
             finally:
                 pass
             end = datetime.datetime.now()
-            logger.info(
-                "############sell order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            logger.info("############sell order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
     def setting_check(self):
         while 1:

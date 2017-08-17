@@ -346,7 +346,7 @@ class TradeMexAndOk(object):
                 time.sleep(1.25)
                 logger.info(e)
                 self.okcoin.cancel_all(self.contract_type)
-            time.sleep(1)
+            time.sleep(0.5)
             #end = datetime.datetime.now()
             #logger.info("############position3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
