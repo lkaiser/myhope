@@ -273,7 +273,7 @@ class TradeMexAndOk(object):
             if not runmain:
                 logger.info("###############higher position suspend##################")
                 time.sleep(2)
-                continue
+                #continue
             try:
                 new_holding = self.okcoin.get_position(self.contract_type)['holding'][0]
                 amount_change = new_holding['sell_amount'] - init_holding['sell_amount']

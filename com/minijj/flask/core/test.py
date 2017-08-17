@@ -13,7 +13,6 @@ from api import bitmex_api
 import sys
 
 import ConfigParser
-import test3
 import hashlib
 
 LOG_FILE = 'test.log'
@@ -107,7 +106,7 @@ if __name__ == '__main__':
    tradehis = []
    tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'),15,"20",2+5-3))
    tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'), 25, "50",1+7-2))
-   redis.set("tradehis",tradehis)
+   #redis.set("tradehis",tradehis)
    #print redis.get("tradehis")
 
    # config = ConfigParser.ConfigParser()
@@ -130,6 +129,10 @@ if __name__ == '__main__':
    b.reverse()
    print b
    print type(b[0])
+
+   print redis.get("fastforml")
+   redis.delete("fastforml")
+   print "###########wft",redis.get("fastforml")
 
 
    m = hashlib.md5()
