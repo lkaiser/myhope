@@ -418,6 +418,20 @@ def recent7d():
         rs.append(el)
     return json.dumps(rs,cls=CJsonEncoder)
 
+@app.route('/recent30d/')
+def recent30d():
+    conn = db.getconn()
+    cursor = conn.cursor()
+    cursor.execute("select margin,update_time from bit_30min_margin order by trading_time desc limit 1000")
+    list = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    rs = []
+    for i in range(len(list) - 1, -1, -1):
+        el = (list[i][1],list[i][0])
+        rs.append(el)
+    return json.dumps(rs,cls=CJsonEncoder)
+
 class CJsonEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
