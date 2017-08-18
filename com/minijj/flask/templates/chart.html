@@ -137,26 +137,6 @@
     	},
         series: [{}]
     };
-	var chart6;
-    $.getJSON("/recent10m/",  function(data) {
-        options.series[0].name = '10分钟实时差价';
-        options.series[0].data = data;
-        //console.info(data);
-        chart6 = new Highcharts.Chart(options6);
-        //console.info(data);
-    	});
-
-
-    function refresh2() {
-    	$.getJSON("/recent210m/",  function(data) {
-        chart6.series[0].setData(data,true);
-    	});
-    }
-
-    setInterval(refresh2,3000);
-
-
-
         var options7 = {
         chart: {
             renderTo: 'container7',
@@ -202,9 +182,6 @@
                             <div class="list-group">
                                 <div class="form-group">
                                     <div id="container" style="min-width:300px;height:400px"></div>
-                                </div>
-                                <div class="form-group">
-                                    <div id="container6" style="min-width:300px;height:400px"></div>
                                 </div>
                                 <div class="form-group">
                                     <div id="container3" style="min-width:300px;height:400px"></div>

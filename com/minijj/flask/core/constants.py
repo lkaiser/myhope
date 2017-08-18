@@ -68,6 +68,10 @@ higher_step_price = config.getfloat("all", "higher_step_price")
 higher_contract_type = config.get("all", "higher_contract_type")
 higher_mex_contract_type = config.get("all", "higher_mex_contract_type")
 
+strategy_on = 1
+strategy_higher = -15
+strategy_lower = -65
+
 def getCfg():
     config = ConfigParser.ConfigParser()
     config.readfp(open(inipath + '/constants.ini'))

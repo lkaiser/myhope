@@ -81,7 +81,7 @@ class OkLower(object):
             if not runmain:
                 logger.info("###############lower position suspend##################")
                 time.sleep(2)
-                continue
+                #continue
 
             try:
                 new_holding = self.okcoin.get_position(self.contract_type)['holding'][0]
@@ -96,10 +96,10 @@ class OkLower(object):
                     holdokprice = (new_holding['buy_price_avg'] * new_holding['buy_amount'] - init_holding['buy_price_avg'] * init_holding['buy_amount']) / amount_change
                     okprice = self.lastsellprice
                     logger.info("###########holding caculated price=" + bytes(holdokprice) + " while last sell price= " + bytes(okprice))
-                    sell_price = round(self.market.mex_bids_price - 8, 1)#以成交为第一目的
+                    sell_price = round(self.market.mex_bids_price - 5, 1)#以成交为第一目的
                     logger.info(init_holding)
                     logger.info(new_holding)
-                    logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.mex_bids_price))
+                    logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.market.mex_bids_price))
                     #logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
                     logger.info( "################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
                     self.mexliquidation.suborder(okprice, sell_price, amount_change, self.expected_profit, self.basis_create, 'sell')
@@ -108,7 +108,7 @@ class OkLower(object):
 
                 if amount_change < 0:#有仓位被平
                     okprice = 0
-                    buy_price = round(self.market.mex_asks_price + 8, 1)
+                    buy_price = round(self.market.mex_asks_price + 5, 1)
                     # 按bais价格从高到低减,排序
 
                     last_pos = None
@@ -119,7 +119,7 @@ class OkLower(object):
                         left_amount = -amount_change
 
                         okprice = self.lastevenuprice
-                        now_create = okprice - self.mex_asks_price
+                        now_create = okprice - self.market.mex_asks_price
 
                         while(self.split_position and left_amount>0):
                             last_pos = self.split_position.pop()
@@ -204,15 +204,15 @@ class OkLower(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.market.q_asks_price.get()
+
             end = datetime.datetime.now()
-            logger.info("############buy order1 spend"+bytes(((end - start).microseconds)/1000.0)+"milli seconds ,q_asks_price= "+bytes(price))
+            logger.info("############buy order1 spend"+bytes(((end - start).microseconds)/1000.0)+"milli seconds ")
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 550000:
-                        time.sleep(round((550000 - escape) / 1000000.0, 2))
+                    if escape < 430000:
+                        time.sleep(round((430000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -238,7 +238,8 @@ class OkLower(object):
 
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds")
+            price = self.market.q_asks_price.get()
+            logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds,q_asks_price= "+bytes(price))
             if self.balancelock.acquire():
                 logger.info("#############balancelock acuire")
                 if self.split_position:
@@ -300,15 +301,15 @@ class OkLower(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.market.q_bids_price.get()
+
             end = datetime.datetime.now()
-            logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ,q_bids_price= " + bytes(price))
+            logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 550000:
-                        time.sleep(round((550000-escape)/1000000.0,2))
+                    if escape < 430000:
+                        time.sleep(round((430000-escape)/1000000.0,2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -333,7 +334,8 @@ class OkLower(object):
                         cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            price = self.market.q_bids_price.get()
+            logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds  ,q_bids_price= " + bytes(price))
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
             okprice = self.conn.get(constants.ok_mex_price)
@@ -388,12 +390,12 @@ class OkLower(object):
                     self.lower__back_distant = fastformh['lower_back_distant']
                     self.step_price = fastformh['lower_step_price']
 
-                    self.conn.set(constants.lower__max_size_key, self.MAX_Size)
-                    self.conn.set(constants.lower__deal_amount_key, self.deal_amount)
-                    self.conn.set(constants.lower__expected_profit_key, self.expected_profit)
-                    self.conn.set(constants.lower__back_distant_key, self.lower__back_distant)
-                    self.conn.set(constants.lower__basic_create_key, self.basis_create)
-                    self.conn.set(constants.lower__step_price_key, self.step_price)
+                    self.conn.set(constants.lower_max_size_key, self.MAX_Size)
+                    self.conn.set(constants.lower_deal_amount_key, self.deal_amount)
+                    self.conn.set(constants.lower_expected_profit_key, self.expected_profit)
+                    self.conn.set(constants.lower_back_distant_key, self.lower__back_distant)
+                    self.conn.set(constants.lower_basic_create_key, self.basis_create)
+                    self.conn.set(constants.lower_step_price_key, self.step_price)
 
                     if beforestatus:
                         self.conn.set(constants.lower_main_run_key, True)

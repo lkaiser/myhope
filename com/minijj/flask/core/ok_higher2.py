@@ -80,12 +80,11 @@ class OkHigher(object):
             if not runmain:
                 logger.info("###############higher position suspend##################")
                 time.sleep(2)
-                continue
+                #continue
             try:
                 new_holding = self.okcoin.get_position(self.contract_type)['holding'][0]
                 amount_change = new_holding['sell_amount'] - init_holding['sell_amount']
-                logger.info(
-                    "ok_sell_balance=" + bytes(self.ok_sell_balance) + "amount_change = " + bytes(amount_change))
+                logger.info("ok_sell_balance="+bytes(self.ok_sell_balance)+"amount_change = "+bytes(amount_change))
 
                 self.ok_sell_balance += amount_change
 
@@ -94,10 +93,10 @@ class OkHigher(object):
                     holdokprice = (new_holding['sell_price_avg'] * (new_holding['sell_amount']) - init_holding['sell_price_avg'] * (init_holding['sell_amount'])) / amount_change
                     okprice = self.lastsellprice
                     logger.info("###########holding caculated price=" + bytes(holdokprice) + " while last sell price= " + bytes(okprice))
-                    sell_price = round(self.market.mex_bids_price + 8, 1)  # 以成交为第一目的
+                    sell_price = round(self.market.mex_bids_price + 5, 1)  # 以成交为第一目的
                     logger.info(init_holding)
                     logger.info(new_holding)
-                    logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(self.mex_bids_price))
+                    logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(self.market.mex_bids_price))
                     # logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
                     logger.info("################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
                     self.mexliquidation.suborder(okprice, sell_price, amount_change, self.expected_profit, self.basis_create, 'buy')
@@ -106,7 +105,7 @@ class OkHigher(object):
 
                 if amount_change < 0:  # 有仓位被平
                     okprice = 0
-                    buy_price = round(self.market.mex_asks_price - 8, 1)
+                    buy_price = round(self.market.mex_asks_price - 5, 1)
                     # logger.info("avarage ok deal price" + bytes(okprice) + " while mex ask price =" + bytes(self.mex_asks_price))
                     # logger.info("mex_asks_price = "+bytes(self.mex_asks_price) + " allow exced area= "+ bytes(2))
                     # 按bais价格从高到低减,排序
@@ -118,7 +117,7 @@ class OkHigher(object):
                         left_amount = -amount_change
 
                         okprice = self.lastevenuprice
-                        now_create = okprice - self.mex_asks_price  #两种算法，1用当前差价  2 用split_position最新平仓差价
+                        now_create = okprice - self.market.mex_asks_price  #两种算法，1用当前差价  2 用split_position最新平仓差价
                         while(self.split_position and left_amount>0):
                             last_pos = self.split_position.pop()
                             left_amount = left_amount - last_pos[0]
@@ -174,16 +173,6 @@ class OkHigher(object):
             self.balancelock.release()
             logger.info("#####balancelock rlease")
 
-    def test(self):
-        logger.info("就是个测试，看回调咋样");
-
-    def minusUpdate(self, okprice, mexprice, amount):
-        if self.balancelock.acquire():  # 更新balance、split_position
-            logger.info("###balancelock acqurie")
-            self.mex_buy_balance += amount
-            self.balancelock.release()
-            logger.info("#####balancelock release")
-
     def submit_buy_order(self):
         order_id = []
         cycletimes = 0
@@ -202,15 +191,15 @@ class OkHigher(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.market.q_bids_price.get()
+
             end = datetime.datetime.now()
             logger.info("############buy order1 spend" + bytes(((end - start).microseconds) / 1000.0) + "milli seconds ,q_asks_price= " + bytes(price))
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 550000:
-                        time.sleep(round((550000 - escape) / 1000000.0, 2))
+                    if escape < 430000:
+                        time.sleep(round((430000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -235,7 +224,8 @@ class OkHigher(object):
                         cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info("############buy order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            price = self.market.q_bids_price.get()
+            logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds  ,q_asks_price= "+bytes(price))
             if self.balancelock.acquire():
                 logger.info("#############balancelock acuire")
                 if self.split_position:
@@ -263,7 +253,7 @@ class OkHigher(object):
                                 self.lastsub = datetime.datetime.now()
                                 self.sublock.release()
                                 logger.info("#####sublock release")
-                                logger.info("下单，下单，平平平 amount= " + bytes(amount) + "mex price = " + bytes(price + self.expected_profit - baiss) + " coin price = " + bytes(price) + " baiss= " + bytes(baiss))
+                                logger.info("下单，下单，平平平 amount= "+bytes(amount)+ "mex price = "+bytes(price+self.expected_profit-baiss)+" coin price = "+bytes(price) +" baiss= "+bytes(baiss))
                                 trade_back = self.okcoin.trade(self.contract_type, price, amount, 4)
                                 oid = trade_back['order_id']
                                 order_id.append([amount, str(oid), datetime.datetime.now()])
@@ -298,15 +288,15 @@ class OkHigher(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.market.q_asks_price.get()
+
             end = datetime.datetime.now()
-            logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ,q_bids_price= " + bytes(price))
+            logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ")
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 550000:
-                        time.sleep(round((550000 - escape) / 1000000.0, 2))
+                    if escape < 430000:
+                        time.sleep(round((430000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -332,7 +322,8 @@ class OkHigher(object):
                     cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            price = self.market.q_asks_price.get()
+            logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds while q_ask_price = "+ bytes(price))
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
             okprice = self.conn.get(constants.ok_mex_price)
@@ -353,7 +344,7 @@ class OkHigher(object):
                         self.sublock.release()
                         logger.info("#####sublock release")
                         self.lastsellprice = price
-                        logger.info("下单，下单，买买买 amount= " + bytes(amount) + "mex price = " + bytes(price - self.basis_create) + " coin price= " + bytes(price) + " basis_create= " + bytes(self.basis_create))
+                        logger.info("下单，下单，买买买 amount= "+bytes(amount)+  "mex price = "+bytes(price-self.basis_create)+" coin price= "+bytes(price) +" basis_create= "+bytes(self.basis_create))
                         trade_back = self.okcoin.trade(self.contract_type, price, amount, 2)
                         oid = trade_back['order_id']
                         order_id.append([amount, str(oid), datetime.datetime.now()])

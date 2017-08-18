@@ -158,7 +158,27 @@ t.start()
 
 while status:
     status = redis.get(constants.trade_server)
-    time.sleep(2)
+
+    lower = redis.get(constants.lower_server)
+    if lower:
+        t.startLserver()
+    else:
+        t.stopLserver()
+
+    higher = redis.get(constants.higher_server)
+    if higher:
+        t.startHserver()
+    else:
+        t.stopHserver()
+
+    if constants.strategy_on:
+        prices = redis.get(constants.ok_mex_price)
+        if prices[4]-prices[1] >= constants.strategy_higher:
+            t.startHserver()
+        if prices[3]-prices[2] <= constants.strategy_lower:
+            t.startLserver()
+
+    time.sleep(1)
     pass
 logger.info("###I'm quit###########")
 t.cancel_all()

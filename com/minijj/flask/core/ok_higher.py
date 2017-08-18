@@ -288,7 +288,7 @@ class TradeMexAndOk(object):
                     logger.info("###########holding caculated price="+bytes(holdokprice) +" while last sell price= "+bytes(okprice))
                     #logger.info("################new_holding.sell_price_avg = "+bytes(new_holding['sell_price_avg'])+" new_holding.sell_amount="+bytes(new_holding['sell_amount']))
                     #logger.info("################init_holding.sell_price_avg = " + bytes(init_holding['sell_price_avg']) + " init_holding.sell_amount=" + bytes(init_holding['sell_amount']))
-                    sell_price = round(self.mex_bids_price + 18, 1)#以成交为第一目的
+                    sell_price = round(self.mex_bids_price + 5, 1)#以成交为第一目的
                     logger.info(init_holding)
                     logger.info(new_holding)
                     logger.info("avarage ok deal price"+bytes(okprice) +" while mex bid price ="+bytes(self.mex_bids_price))
@@ -300,7 +300,7 @@ class TradeMexAndOk(object):
 
                 if amount_change < 0:#有仓位被平
                     okprice = 0
-                    buy_price = round(self.mex_asks_price - 18, 1)
+                    buy_price = round(self.mex_asks_price - 5, 1)
                     # 按bais价格从高到低减,排序
 
                     last_pos = None
@@ -393,15 +393,15 @@ class TradeMexAndOk(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.q_bids_price.get()
+
             end = datetime.datetime.now()
-            logger.info("############buy order1 spend"+bytes(((end - start).microseconds)/1000.0)+"milli seconds ,q_asks_price= "+bytes(price))
+            logger.info("############buy order1 spend"+bytes(((end - start).microseconds)/1000.0)+"milli seconds")
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 500000:
-                        time.sleep(round((500000 - escape) / 1000000.0, 2))
+                    if escape < 400000:
+                        time.sleep(round((400000 - escape) / 1000000.0, 2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -426,7 +426,8 @@ class TradeMexAndOk(object):
                         cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds")
+            price = self.q_bids_price.get()
+            logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds  ,q_asks_price= "+bytes(price))
             if self.balancelock.acquire():
                 logger.info("#############balancelock acuire")
                 if self.split_position:
@@ -487,15 +488,15 @@ class TradeMexAndOk(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-            price = self.q_asks_price.get()
+
             end = datetime.datetime.now()
-            logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ,q_bids_price= " + bytes(price))
+            logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ")
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
                     escape = (datetime.datetime.now() - self.lastsub).microseconds
-                    if escape < 500000:
-                        time.sleep(round((500000-escape)/1000000.0,2))
+                    if escape < 400000:
+                        time.sleep(round((400000-escape)/1000000.0,2))
                         self.lastsub = datetime.datetime.now()
                     self.sublock.release()
                     logger.info("#####sublock release")
@@ -521,7 +522,8 @@ class TradeMexAndOk(object):
                     cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            price = self.q_asks_price.get()
+            logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds while q_ask_price = "+ bytes(price))
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
             okprice = self.conn.get(constants.ok_mex_price)

@@ -165,7 +165,7 @@ def admin():
     formh.higher_basis_create.data = redis.get(constants.higher_basic_create_key)
     formh.higher_step_price.data = redis.get(constants.higher_step_price_key)
 
-    return render_template('admin.html',forml=forml,formh=formh,ok_holding=ok_holding,mex_holding=mex_holding,tradeserver=str(tradeserver),main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),all=all,holdh=holdh,holdl=holdl,orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count,todaysum=todaycount)
+    return render_template('admin2.html',forml=forml,formh=formh,ok_holding=ok_holding,mex_holding=mex_holding,tradeserver=str(tradeserver),main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),all=all,holdh=holdh,holdl=holdl,orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count,todaysum=todaycount)
 
 @app.route('/liquid')
 @login_required
@@ -273,48 +273,42 @@ def setting():
 @app.route('/threadctl/<thread>')
 @login_required
 def threadctl(thread):
+    key = True
+    if "trade" == thread:
+        key = redis.get(constants.trade_server)
+        if key:
+            redis.set(constants.trade_server,False)
+        else:
+            os.system('nohup python core/ok_mex.py &')
+
     if "main" == thread:
         key = redis.get(constants.lower_main_run_key)
         redis.set(constants.lower_main_run_key,not key)
-        return str(not key)
     if "buy" == thread:
         key = redis.get(constants.lower_buy_run_key)
         redis.set(constants.lower_buy_run_key,not key)
-        return str(not key)
     if "sell" == thread:
         key = redis.get(constants.lower_sell_run_key)
         redis.set(constants.lower_sell_run_key,not key)
-        return str(not key)
+
     if "main2" == thread:
         key = redis.get(constants.higher_main_run_key)
         redis.set(constants.higher_main_run_key,not key)
-        return str(not key)
     if "buy2" == thread:
         key = redis.get(constants.higher_buy_run_key)
         redis.set(constants.higher_buy_run_key,not key)
-        return str(not key)
     if "sell2" == thread:
         key = redis.get(constants.higher_sell_run_key)
         redis.set(constants.higher_sell_run_key,not key)
-        return str(not key)
 
     if "server" == thread:
         key = redis.get(constants.lower_server)
-        if key:
-            redis.set(constants.lower_server, False)
-            return str(False)
-        else:
-            os.system('nohup python core/ok_lower.py &')
-            return str(True)
+        redis.set(constants.lower_server, not key)
     if "server2" == thread:
         key = redis.get(constants.higher_server)
-        if key:
-            redis.set(constants.higher_server, False)
-            return str(False)
-        else:
-            os.system('nohup python core/ok_higher.py &')
-            return str(True)
-
+        redis.set(constants.higher_server, not key)
+    time.sleep(2)
+    return str(not key)
 
 @app.route('/recent10m/')
 def recent10min():
