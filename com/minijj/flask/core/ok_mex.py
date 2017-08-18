@@ -25,13 +25,13 @@ import os
 # parentpath = os.path.dirname(sys.path[0])
 
 LOG_FILE = sys.path[0] + '/trade.log'
-handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 4, backupCount=10)  # 实例化handler
+handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 4, backupCount=20)  # 实例化handler
 fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
 
 formatter = logging.Formatter(fmt)  # 实例化formatter
 handler.setFormatter(formatter)  # 为handler添加formatter
 
-logger = logging.getLogger('tst')  # 获取名为tst的logger
+logger = logging.getLogger('root')  # 获取名为tst的logger
 logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
 
@@ -70,27 +70,35 @@ class TradeMexAndOk(object):
                 hserver = redis.get(constants.higher_server)
                 lserver = redis.get(constants.lower_server)
                 if hserver:
-                    if "start" == hserver:
-                        self.startHserver()
-                    else:
-                        self.stopHserver()
+                    self.startHserver()
+                else:
+                    self.stopHserver()
                 if lserver:
-                    if "start" == lserver:
-                        self.startLserver()
-                    else:
-                        self.stopLserver()
+                    self.startLserver()
+                else:
+                    self.stopLserver()
+
+                if constants.strategy_on:
+                    prices = redis.get(constants.ok_mex_price)
+                    if prices[4] - prices[1] >= constants.strategy_higher:
+                        t.startHserver()
+                    if prices[3] - prices[2] <= constants.strategy_lower:
+                        t.startLserver()
+
             except:
                 pass
 
     def start(self):
         self.marketPrice.start()
-        #self.OkHigher.start()
-        #self.OkLower.start()
         self.mexliquidation.start()
 
         check = threading.Thread(target=self.setting_check)
         check.setDaemon(True)
         check.start()
+
+    def stop(self):
+        self.OkHigher.start()
+        self.OkLower.stop()
 
     def startHserver(self):
         self.OkLower.stop()
@@ -147,38 +155,16 @@ class TradeMexAndOk(object):
 
 
 redis = Conn_db()
-#redis.conn.set(constants.higher_main_run_key,False)
-#redis.conn.set(constants.lower_main_run_key,False)
 redis.set(constants.trade_server, True)
 status = True
 
 t = TradeMexAndOk()
 t.start()
 
-
 while status:
     status = redis.get(constants.trade_server)
-
-    lower = redis.get(constants.lower_server)
-    if lower:
-        t.startLserver()
-    else:
-        t.stopLserver()
-
-    higher = redis.get(constants.higher_server)
-    if higher:
-        t.startHserver()
-    else:
-        t.stopHserver()
-
-    if constants.strategy_on:
-        prices = redis.get(constants.ok_mex_price)
-        if prices[4]-prices[1] >= constants.strategy_higher:
-            t.startHserver()
-        if prices[3]-prices[2] <= constants.strategy_lower:
-            t.startLserver()
-
     time.sleep(1)
     pass
+
 logger.info("###I'm quit###########")
 t.cancel_all()

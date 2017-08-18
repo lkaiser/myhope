@@ -46,6 +46,9 @@ class OkHigher(object):
             self.mex_buy_balance = self.ok_sell_balance
         self.balancelock = threading.Lock()
 
+        self.conn.set(constants.higher_buy_run_key, True)
+        self.conn.set(constants.higher_sell_run_key, True)
+        self.conn.set(constants.higher_main_run_key, True)
 
         self.slipkey = constants.higher_split_position
         self.lastevenuprice = 0
@@ -392,9 +395,9 @@ class OkHigher(object):
                 pass
 
     def start(self):
-        logger.info("###############################Higher跑起来了，哈哈哈");
         #self.server.test()
         if not self.status:
+            logger.info("###############################Higher跑起来了，哈哈哈");
             self.status = True
             pm = threading.Thread(target=self.position_mon)
             pm.setDaemon(True)
@@ -414,7 +417,11 @@ class OkHigher(object):
 
     def stop(self):
         if self.status:
+            logger.info("###############################Higher shutdown");
             self.status = False
             time.sleep(3)
+            self.conn.set(constants.higher_buy_run_key, False)
+            self.conn.set(constants.higher_sell_run_key, False)
+            self.conn.set(constants.higher_main_run_key, False)
             self.okcoin.cancel_all(self.contract_type)
 
