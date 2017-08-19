@@ -301,7 +301,7 @@ class OkLower(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-
+            price = self.market.q_bids_price.get()
             end = datetime.datetime.now()
             logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
             if order_id:
@@ -334,7 +334,7 @@ class OkLower(object):
                         cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            price = self.market.q_bids_price.get()
+
             logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds  ,q_bids_price= " + bytes(price))
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
@@ -409,6 +409,10 @@ class OkLower(object):
         if not self.status:
             logger.info("###############################Lower 跑起来了，哈哈哈");
             self.status = True
+            self.conn.set(constants.lower_buy_run_key, True)
+            self.conn.set(constants.lower_sell_run_key, True)
+            self.conn.set(constants.lower_main_run_key, True)
+
             pm = threading.Thread(target=self.position_mon)
             pm.setDaemon(True)
             pm.start()

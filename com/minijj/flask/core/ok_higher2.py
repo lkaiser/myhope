@@ -194,7 +194,7 @@ class OkHigher(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-
+            price = self.market.q_bids_price.get()
             end = datetime.datetime.now()
             logger.info("############buy order1 spend" + bytes(((end - start).microseconds) / 1000.0) + "milli seconds ")
             if order_id:
@@ -227,7 +227,6 @@ class OkHigher(object):
                         cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            price = self.market.q_bids_price.get()
             logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds  ,q_asks_price= "+bytes(price))
             if self.balancelock.acquire():
                 logger.info("#############balancelock acuire")
@@ -399,6 +398,10 @@ class OkHigher(object):
         if not self.status:
             logger.info("###############################Higher跑起来了，哈哈哈");
             self.status = True
+            self.conn.set(constants.higher_buy_run_key, True)
+            self.conn.set(constants.higher_sell_run_key, True)
+            self.conn.set(constants.higher_main_run_key, True)
+
             pm = threading.Thread(target=self.position_mon)
             pm.setDaemon(True)
             pm.start()

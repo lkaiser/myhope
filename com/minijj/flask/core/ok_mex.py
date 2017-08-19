@@ -165,6 +165,6 @@ while status:
     status = redis.get(constants.trade_server)
     time.sleep(1)
     pass
-
+t.stop()
 logger.info("###I'm quit###########")
 t.cancel_all()

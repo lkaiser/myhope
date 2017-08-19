@@ -393,7 +393,7 @@ class TradeMexAndOk(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-
+            price = self.q_bids_price.get()
             end = datetime.datetime.now()
             logger.info("############buy order1 spend"+bytes(((end - start).microseconds)/1000.0)+"milli seconds")
             if order_id:
@@ -426,7 +426,7 @@ class TradeMexAndOk(object):
                         cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            price = self.q_bids_price.get()
+
             logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds  ,q_asks_price= "+bytes(price))
             if self.balancelock.acquire():
                 logger.info("#############balancelock acuire")
@@ -488,7 +488,7 @@ class TradeMexAndOk(object):
                 continue
             laststatus = True
             start = datetime.datetime.now()
-
+            price = self.q_asks_price.get()
             end = datetime.datetime.now()
             logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ")
             if order_id:
@@ -522,7 +522,7 @@ class TradeMexAndOk(object):
                     cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            price = self.q_asks_price.get()
+
             logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds while q_ask_price = "+ bytes(price))
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
