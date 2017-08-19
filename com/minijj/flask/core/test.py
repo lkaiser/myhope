@@ -103,6 +103,8 @@ if __name__ == '__main__':
    print "#########mex info"
    print mexall
 
+   print 4091.849-4099.22 <= -100
+
    tradehis = []
    tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'),15,"20",2+5-3))
    tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'), 25, "50",1+7-2))
