@@ -382,6 +382,8 @@ class TradeMexAndOk(object):
         cycletimes = 0
         laststatus = False
         while 1:
+            if self.amountsigal == 0:
+                time.sleep(3)
             run = self.conn.get(constants.lower_buy_run_key)
             runmain = self.conn.get(constants.lower_main_run_key)
             if not run or not runmain:
@@ -477,6 +479,8 @@ class TradeMexAndOk(object):
         cycletimes = 0
         laststatus = True
         while 1:
+            if self.amountsigal == 0:
+                time.sleep(3)
             run = self.conn.get(constants.lower_sell_run_key)
             runmain = self.conn.get(constants.lower_main_run_key)
             if not run or not runmain:

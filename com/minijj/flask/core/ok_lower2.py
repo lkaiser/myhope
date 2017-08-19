@@ -69,13 +69,13 @@ class OkLower(object):
 
     #现有问题，一开始就查持仓，执行到后面的重新提交平仓或者开仓动作时，并非以最新实际持仓下的操作，导致重复提交平仓（分步平仓下会影响盈利）、开仓（超过最大限额开仓）
     #一开始就要取消所有平仓、开仓动作,线程sleep 0.5s,执行接下来在查持仓,这样保证在一个循环周期内持仓不变
-    def position_mon(self):
+    def position_mon(self,manual):
         init_holding = None
         okposition = self.okcoin.get_position(self.contract_type)['holding']
         if okposition:
             init_holding = okposition[0]
         while 1:
-            if not self.status:
+            if not self.status and not manual:
                 break
             runmain = self.conn.get(constants.lower_main_run_key)
             if not runmain:
@@ -193,6 +193,8 @@ class OkLower(object):
         while 1:
             if not self.status:
                 break
+            if self.amountsigal == 0:
+                time.sleep(3)
             run = self.conn.get(constants.lower_buy_run_key)
             runmain = self.conn.get(constants.lower_main_run_key)
             if not run or not runmain:
@@ -288,8 +290,11 @@ class OkLower(object):
         cycletimes = 0
         laststatus = True
         while 1:
+
             if not self.status:
                 break
+            if self.amountsigal == 0:
+                time.sleep(3)
             run = self.conn.get(constants.lower_sell_run_key)
             runmain = self.conn.get(constants.lower_main_run_key)
             if not run or not runmain:
@@ -413,7 +418,7 @@ class OkLower(object):
             self.conn.set(constants.lower_sell_run_key, True)
             self.conn.set(constants.lower_main_run_key, True)
 
-            pm = threading.Thread(target=self.position_mon)
+            pm = threading.Thread(target=self.position_mon,args=(False,))
             pm.setDaemon(True)
             pm.start()
 
@@ -433,7 +438,8 @@ class OkLower(object):
         if self.status:
             logger.info("###############################Lower shutdown");
             self.status = False
-            time.sleep(3)
+            time.sleep(2)
+            self.position_mon(True)
             self.conn.set(constants.lower_buy_run_key, False)
             self.conn.set(constants.lower_sell_run_key, False)
             self.conn.set(constants.lower_main_run_key, False)

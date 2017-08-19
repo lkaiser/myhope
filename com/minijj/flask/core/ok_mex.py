@@ -78,15 +78,26 @@ class TradeMexAndOk(object):
                 else:
                     self.stopLserver()
 
-                if constants.strategy_on:
+                if redis.get(constants.strategy_on_key):
                     prices = redis.get(constants.ok_mex_price)
-                    if prices[4] - prices[1] >= constants.strategy_higher:
+                    high = redis.get(constants.strategy_higher_key)
+                    low = redis.get(constants.strategy_lower_key)
+                    if (prices[4] - prices[1]) >= high:
+                        logger.info("#########high strategy acitve prices[4] = "+bytes(prices[4])+" prices[1] = "+bytes(prices[1]) +" high = "+bytes(high))
                         t.startHserver()
-                    if prices[3] - prices[2] <= constants.strategy_lower:
+                    if (prices[3] - prices[2]) <= low:
+                        logger.info("#########low strategy acitve prices[3] = " + bytes(prices[3]) + " prices[2] = " + bytes(prices[2]) + " low = " + bytes(low))
                         t.startLserver()
-
             except:
                 pass
+
+    def initcfg(self,redis):
+        redis.set(constants.strategy_on_key,False)
+        redis.set(constants.strategy_higher_key, 0)
+        redis.set(constants.strategy_lower_key, 0)
+
+        redis.set(constants.higher_server,False)
+        redis.set(constants.lower_server, False)
 
     def start(self):
         self.marketPrice.start()
@@ -97,7 +108,7 @@ class TradeMexAndOk(object):
         check.start()
 
     def stop(self):
-        self.OkHigher.start()
+        self.OkHigher.stop()
         self.OkLower.stop()
 
     def startHserver(self):
@@ -159,6 +170,7 @@ redis.set(constants.trade_server, True)
 status = True
 
 t = TradeMexAndOk()
+t.initcfg(redis)
 t.start()
 
 while status:
