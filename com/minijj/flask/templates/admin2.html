@@ -95,7 +95,7 @@ $(document).ready(function() {
                     交易程序
                 </div>
                 <div class="col-lg-6">
-                    {% if server=="True" %}<button type="button" class="btn btn-success" id="trade" name="tradeserver">运行中{% else %}<button type="button" class="btn btn-warning" id="trade" name="tradeserver">停止{% endif %}</button>
+                    {% if tradeserver=="True" %}<button type="button" class="btn btn-success" id="trade" name="tradeserver">运行中{% else %}<button type="button" class="btn btn-warning" id="trade" name="tradeserver">停止{% endif %}</button>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -165,7 +165,7 @@ $(document).ready(function() {
                                     <p>okcoin Higher {{ok_holding.sell_amount}}  okcoin Lower {{ok_holding.buy_amount}}</p>
                                     {% endif %}
                                     {% if mex_holding %}
-                                    <p>mex Holding  {{mex_holding[1]/100}} </p>
+                                    <p>mex Holding {{mex_holding[1]/100}}</p>
                                     {% endif %}
                                 </div>
                             </div>

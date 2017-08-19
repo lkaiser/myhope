@@ -101,7 +101,7 @@ def chart():
 @app.route('/admin')
 @login_required
 def admin():
-    tradeserver = redis.get(constants.lower_server)
+    tradeserver = redis.get(constants.trade_server)
 
     main = redis.get(constants.lower_main_run_key)
     buy = redis.get(constants.lower_buy_run_key)
@@ -165,6 +165,7 @@ def admin():
     formh.higher_basis_create.data = redis.get(constants.higher_basic_create_key)
     formh.higher_step_price.data = redis.get(constants.higher_step_price_key)
 
+
     return render_template('admin2.html',forml=forml,formh=formh,ok_holding=ok_holding,mex_holding=mex_holding,tradeserver=str(tradeserver),main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),all=all,holdh=holdh,holdl=holdl,orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count,todaysum=todaycount)
 
 @app.route('/liquid')
@@ -202,7 +203,7 @@ def fastlsetting():
           "lower_back_distant": form.lower_back_distant.data, "lower_basis_create": form.lower_basis_create.data,
           "lower_step_price": form.lower_step_price.data}
     redis.set("fastforml",fm)
-    print form
+    time.sleep(2)
     return flask.redirect(flask.url_for('admin'))
 
 @app.route('/fasthsetting' , methods=['POST'])
@@ -212,6 +213,7 @@ def fasthsetting():
     constants.updateh(form)
     fm = {"higher_max_size":form.higher_max_size.data,"higher_deal_amount":form.higher_deal_amount.data,"higher_expected_profit":form.higher_expected_profit.data,"higher_back_distant":form.higher_back_distant.data,"higher_basis_create":form.higher_basis_create.data,"higher_step_price":form.higher_step_price.data}
     redis.set("fastformh", fm)
+    time.sleep(2)
     return flask.redirect(flask.url_for('admin'))
 
 @app.route('/setting' , methods=['GET', 'POST'])
@@ -313,8 +315,28 @@ def threadctl(thread):
             redis.set(constants.lower_server, key)
         redis.set(constants.higher_server, not key)
 
+    if "strategy" == thread:
+        key = redis.get(constants.strategy_on_key)
+        redis.set(constants.strategy_on_key,not key)
+
     time.sleep(2)
     return str(not key)
+
+@app.route('/strategy' , methods=['GET', 'POST'])
+@login_required
+def strategy():
+    if request.method == 'POST':
+        strategyh = float(request.values.get("edgeup"))
+        strategyl = float(request.values.get("edgedown"))
+
+        redis.set(constants.strategy_higher_key,strategyh)
+        redis.set(constants.strategy_lower_key, strategyl)
+    else:
+        pass
+    strategyon = redis.get(constants.strategy_on_key)
+    strategyh = redis.get(constants.strategy_higher_key)
+    strategyl = redis.get(constants.strategy_lower_key)
+    return render_template('strategy.html', strategyon = str(strategyon),strategyh = strategyh,strategyl = strategyl)
 
 @app.route('/recent10m/')
 def recent10min():
