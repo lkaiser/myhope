@@ -136,7 +136,6 @@ class mexliquidation(object):
                 rst = self.mex.sell((abs(order[2]) * 100 - partdel), (order[1] - slipp))
                 logger.info(rst)
                 if rst['ordStatus'] and 'Filled' == rst['ordStatus']:
-                    self.server.plusUpdate(order[0], rst['avgPx'], order[2])
                     if order[2] > 0:
                         self.lserver.plusUpdate(order[0], rst['avgPx'], order[2])
                         logger.info("#####okcoin=" + bytes(order[0]) + " #####mex=" + bytes(rst['avgPx']) + "##amount=" + bytes(order[2]) + " ##liquid_bais=" + bytes(order[4]) + "建仓滑点 " + bytes(order[0] - rst['avgPx'] - order[4]) + " #######")
