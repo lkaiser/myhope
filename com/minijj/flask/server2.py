@@ -303,10 +303,16 @@ def threadctl(thread):
 
     if "server" == thread:
         key = redis.get(constants.lower_server)
+        if not key:
+            redis.set(constants.higher_server, key)
         redis.set(constants.lower_server, not key)
+
     if "server2" == thread:
         key = redis.get(constants.higher_server)
+        if not key:
+            redis.set(constants.lower_server, key)
         redis.set(constants.higher_server, not key)
+
     time.sleep(2)
     return str(not key)
 

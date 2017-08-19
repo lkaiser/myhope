@@ -57,7 +57,7 @@ class OkHigher(object):
         self.sublock = threading.Lock()
         self.amountsigal = 0
 
-        logger.info("##############Hihger 分段持仓##########")
+        logger.info("##############Higher 分段持仓##########")
         self.split_position = self.conn.get(self.slipkey)
         if (not self.split_position):
             self.split_position = []
@@ -196,7 +196,7 @@ class OkHigher(object):
             start = datetime.datetime.now()
 
             end = datetime.datetime.now()
-            logger.info("############buy order1 spend" + bytes(((end - start).microseconds) / 1000.0) + "milli seconds ,q_asks_price= " + bytes(price))
+            logger.info("############buy order1 spend" + bytes(((end - start).microseconds) / 1000.0) + "milli seconds ")
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acqurie")

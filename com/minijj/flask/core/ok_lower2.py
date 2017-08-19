@@ -38,9 +38,6 @@ class OkLower(object):
         self.conn.set(constants.lower_basic_create_key, self.basis_create)
         self.conn.set(constants.lower_step_price_key, self.step_price)
 
-        self.mexliquidation = mexliquidation.mexliquidation(self.mex,self)
-        self.mexliquidation.start()
-
         okposition = self.okcoin.get_position(self.contract_type)['holding'][0]
         self.ok_sell_balance = 0
         self.mex_buy_balance = 0
@@ -59,7 +56,7 @@ class OkLower(object):
         self.sublock = threading.Lock()
         self.amountsigal = 0
 
-        logger.info("##############初始化 后分段持仓##########")
+        logger.info("##############lower 初始化 后分段持仓##########")
         self.split_position = self.conn.get(self.slipkey)
         if(not self.split_position):
             self.split_position = []
