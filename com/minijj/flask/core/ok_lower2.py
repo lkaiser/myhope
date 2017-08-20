@@ -29,6 +29,8 @@ class OkLower(object):
         self.init_basis_create = basis_create
         self.init_MAX_Size = max_size
         self.status = False
+        self.sellstatus = True #默认为true 否则 postion 进程有可能跑不起来
+        self.buystatus = True #默认为true 否则 postion 进程有可能跑不起来
 
         self.conn = Conn_db()
         self.conn.set(constants.lower_max_size_key, self.MAX_Size)
@@ -72,11 +74,16 @@ class OkLower(object):
     def position_mon(self,manual):
         init_holding = None
         okposition = self.okcoin.get_position(self.contract_type)['holding']
+        last_time = 0
         if okposition:
             init_holding = okposition[0]
         while 1:
-            if not self.status and not manual:
-                break
+            if not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
+                if last_time > 0:
+                    logger.info("###############################Lower position thread shutdown");
+                    break
+                else:
+                    last_time += 1
             runmain = self.conn.get(constants.lower_main_run_key)
             if not runmain:
                 logger.info("###############lower position suspend##################")
@@ -192,6 +199,8 @@ class OkLower(object):
         laststatus = False
         while 1:
             if not self.status:
+                self.buystatus = False
+                logger.info("###############################Lower buy thread shutdown");
                 break
             if self.amountsigal == 0:
                 time.sleep(3)
@@ -292,8 +301,10 @@ class OkLower(object):
         while 1:
 
             if not self.status:
+                self.sellstatus = False
+                logger.info("###############################Lower sell thread shutdown");
                 break
-            if self.amountsigal == 0:
+            if self.amountsigal == 0:#有平仓或开仓，暂停，优先 position进程查询持仓状况
                 time.sleep(3)
             run = self.conn.get(constants.lower_sell_run_key)
             runmain = self.conn.get(constants.lower_main_run_key)
@@ -438,8 +449,8 @@ class OkLower(object):
         if self.status:
             logger.info("###############################Lower shutdown");
             self.status = False
-            time.sleep(2)
-            self.position_mon(True)
+            time.sleep(0.5)
+            #self.position_mon(True)
             self.conn.set(constants.lower_buy_run_key, False)
             self.conn.set(constants.lower_sell_run_key, False)
             self.conn.set(constants.lower_main_run_key, False)
