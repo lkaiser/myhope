@@ -25,7 +25,7 @@ import os
 # parentpath = os.path.dirname(sys.path[0])
 
 LOG_FILE = sys.path[0] + '/trade.log'
-handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 4, backupCount=20)  # 实例化handler
+handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 8, backupCount=20)  # 实例化handler
 fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
 
 formatter = logging.Formatter(fmt)  # 实例化formatter
@@ -175,8 +175,10 @@ t.start()
 
 while status:
     status = redis.get(constants.trade_server)
-    time.sleep(1)
+    logger.info("################# status ="+str(status))
+    time.sleep(2)
     pass
 t.stop()
 logger.info("###I'm quit###########")
 t.cancel_all()
+sys.exit(0)

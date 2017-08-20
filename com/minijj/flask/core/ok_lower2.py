@@ -78,7 +78,7 @@ class OkLower(object):
         if okposition:
             init_holding = okposition[0]
         while 1:
-            if not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
+            if not self.status and not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
                 if last_time > 0:
                     logger.info("###############################Lower position thread shutdown");
                     break
@@ -197,6 +197,7 @@ class OkLower(object):
         order_id = []
         cycletimes = 0
         laststatus = False
+        self.buystatus = True
         while 1:
             if not self.status:
                 self.buystatus = False
@@ -298,6 +299,7 @@ class OkLower(object):
         order_id = []
         cycletimes = 0
         laststatus = True
+        self.sellstatus = True
         while 1:
 
             if not self.status:

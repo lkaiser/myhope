@@ -20,7 +20,7 @@
 </style>
 <script type="text/javascript">
 $(document).ready(function() {
-    $('#main,#main2,#buy,#buy2,#sell,#sell2').click(function(){
+    $('#buy,#buy2,#sell,#sell2').click(function(){
         var self = this;
         var id = $(this).attr("id");
         $.get("/threadctl/"+id,function(data){
@@ -41,13 +41,15 @@ $(document).ready(function() {
         var id = $(this).attr("id");
         $.get("/threadctl/"+id,function(data){
             if("False" == data) {
-                $(self).addClass("btn-warning")
-                $(self).html("停止")
-                $(self).removeClass("btn-success")
+                var allbtns = $(self).parent().parent().find('button')
+                allbtns.addClass("btn-warning")
+                allbtns.html("停止")
+                allbtns.removeClass("btn-success")
             }else {
-                $(self).removeClass("btn-warning")
-                $(self).html("运行中")
-                $(self).addClass("btn-success")
+                var allbtns = $(self).parent().parent().find('button')
+                allbtns.removeClass("btn-warning")
+                allbtns.html("运行中")
+                allbtns.addClass("btn-success")
             }
         })
     });
@@ -288,9 +290,6 @@ $(document).ready(function() {
                                     Lower server{% if server=="True" %}<button type="button" class="pull-right btn btn-success" id="server">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="server">停止</button>{% endif %}
                                 </div>
                                 <div class="form-group">
-                                    主进程 {% if main=="True" %}<button type="button" class="pull-right btn btn-success" id="main">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="main">暂停</button>{% endif %}
-                                </div>
-                                <div class="form-group">
                                     开仓进程{% if sell=="True" %}<button type="button" class="pull-right btn btn-success" id="sell">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="sell">暂停</button>{% endif %}
                                 </div>
                                 <div class="form-group">
@@ -316,9 +315,6 @@ $(document).ready(function() {
                             <div class="list-group">
                                 <div class="form-group">
                                     Higher server{% if server2=="True" %}<button type="button" class="pull-right btn btn-success" id="server2">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="server2">停止</button>{% endif %}
-                                </div>
-                                <div class="form-group">
-                                    主进程 {% if main2=="True" %}<button type="button" class="pull-right btn btn-success" id="main2">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="main2">暂停</button>{% endif %}
                                 </div>
                                 <div class="form-group">
                                     开仓进程{% if sell2=="True" %}<button type="button" class="pull-right btn btn-success" id="sell2">运行中</button>{% else %}<button type="button" class="pull-right btn btn-warning" id="sell2">暂停</button>{% endif %}
