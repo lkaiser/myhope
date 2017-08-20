@@ -410,7 +410,7 @@ class OkHigher(object):
             except:
                 pass
 
-    def start(self):
+    def start(self,basis=None):
         #self.server.test()
         if not self.status:
             logger.info("###############################Higher跑起来了，哈哈哈");
@@ -418,6 +418,10 @@ class OkHigher(object):
             self.conn.set(constants.higher_buy_run_key, True)
             self.conn.set(constants.higher_sell_run_key, True)
             self.conn.set(constants.higher_main_run_key, True)
+
+            if basis:
+                self.conn.set(constants.higher_basic_create_key, basis)
+                self.basis_create = basis
 
             pm = threading.Thread(target=self.position_mon,args=(False,))
             pm.setDaemon(True)
@@ -446,3 +450,12 @@ class OkHigher(object):
             self.conn.set(constants.higher_main_run_key, False)
             self.okcoin.cancel_all(self.contract_type)
 
+    def stopOpen(self):
+        run = self.conn.get(constants.higher_sell_run_key)
+        if run:
+            self.conn.set(constants.higher_sell_run_key,False)
+
+    def remainOpen(self):
+        run = self.conn.get(constants.higher_sell_run_key)
+        if not run:
+            self.conn.set(constants.higher_sell_run_key,True)

@@ -82,12 +82,33 @@ class TradeMexAndOk(object):
                     prices = redis.get(constants.ok_mex_price)
                     high = redis.get(constants.strategy_higher_key)
                     low = redis.get(constants.strategy_lower_key)
+                    hposition = redis.get(constants.higher_split_position)
+                    lposition = redis.get(constants.lower_split_position)
+                    if hposition:
+                        lastpos = hposition.pop()
+                        if lastpos[1] -(prices[3] - prices[2])  > 10:#当前差价接近higher盈利平仓点时，切到higher
+                            t.startHserver()
+                    if lposition:
+                        last_pos = lposition.pop()
+                        if prices[4] - prices[1] - last_pos[1] > 10:
+                            t.startLserver()
+
+                    if prices[4] - prices[1] - low < 25:
+                        t.stopOpenH()
+                    #else:
+                    #    t.remainOpenH()
+
+                    if high - (prices[3]-prices[2]) <25:
+                        t.stopOpenL()
+                    #else:
+                    #    t.remainOpenL()
+
                     if (prices[4] - prices[1]) >= high:
                         logger.info("#########high strategy acitve prices[4] = "+bytes(prices[4])+" prices[1] = "+bytes(prices[1]) +" high = "+bytes(high))
-                        t.startHserver()
+                        t.startHserver(high)
                     if (prices[3] - prices[2]) <= low:
                         logger.info("#########low strategy acitve prices[3] = " + bytes(prices[3]) + " prices[2] = " + bytes(prices[2]) + " low = " + bytes(low))
-                        t.startLserver()
+                        t.startLserver(low)
             except:
                 pass
 
@@ -111,20 +132,31 @@ class TradeMexAndOk(object):
         self.OkHigher.stop()
         self.OkLower.stop()
 
-    def startHserver(self):
+    def startHserver(self,basis=None):
         self.OkLower.stop()
-        self.OkHigher.start()
+        self.OkHigher.start(basis)
 
     def stopHserver(self):
         self.OkHigher.stop()
 
-    def startLserver(self):
+    def startLserver(self,basis=None):
         self.OkHigher.stop()
-        self.OkLower.start()
+        self.OkLower.start(basis)
 
     def stopLserver(self):
         self.OkLower.stop()
 
+    def stopOpenH(self):
+        self.OkHigher.stopOpen()
+
+    def remainOpenH(self):
+        self.OkHigher.remainOpen()
+
+    def stopOpenL(self):
+        self.OkLower.stopOpen()
+
+    def remainOpenL(self):
+        self.OkLower.remainOpen()
 
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)

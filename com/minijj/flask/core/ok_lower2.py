@@ -422,7 +422,7 @@ class OkLower(object):
                 pass
 
 
-    def start(self):
+    def start(self,basis=None):
         #self.server.test()
         if not self.status:
             logger.info("###############################Lower 跑起来了，哈哈哈");
@@ -430,6 +430,10 @@ class OkLower(object):
             self.conn.set(constants.lower_buy_run_key, True)
             self.conn.set(constants.lower_sell_run_key, True)
             self.conn.set(constants.lower_main_run_key, True)
+
+            if basis:
+                self.conn.set(constants.lower_basic_create_key, basis)
+                self.basis_create = basis
 
             pm = threading.Thread(target=self.position_mon,args=(False,))
             pm.setDaemon(True)
@@ -457,4 +461,14 @@ class OkLower(object):
             self.conn.set(constants.lower_sell_run_key, False)
             self.conn.set(constants.lower_main_run_key, False)
             self.okcoin.cancel_all(self.contract_type)
+
+    def stopOpen(self):
+        run = self.conn.get(constants.lower_sell_run_key)
+        if run:
+            self.conn.set(constants.lower_sell_run_key,False)
+
+    def remainOpen(self):
+        run = self.conn.get(constants.lower_sell_run_key)
+        if not run:
+            self.conn.set(constants.lower_sell_run_key,True)
 
