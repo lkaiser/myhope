@@ -31,7 +31,7 @@
     };
 	var chart;
     $.getJSON("/recent10m/",  function(data) {
-        options.series[0].name = '10分钟实时差价';
+        options.series[0].name = 'higher开，lower平10分钟实时差价';
         options.series[0].data = data;
         //console.info(data);
         chart = new Highcharts.Chart(options);
@@ -46,6 +46,46 @@
     }
 
     setInterval(refresh,3000);
+
+
+    var options2 = {
+        chart: {
+            renderTo: 'container2',
+            type: 'spline'
+        },
+        plotOptions: {
+		  spline: {           // 针对 spline 有效的配置
+			lineWidth: 1
+		   }
+		},
+        title: {
+     			  text: 'okcoin & bitmex 实时价差',
+        		x: -20
+    		},
+    	tooltip: {
+    		style: {                      // 文字内容相关样式
+				fontSize: "12px",
+			}
+    	},
+        series: [{}]
+    };
+
+	var chart2;
+    $.getJSON("/recent210m/",  function(data) {
+        options2.series[0].name = 'higher平，lower开10分钟实时差价';
+        options2.series[0].data = data;
+        chart2 = new Highcharts.Chart(options2);
+    	});
+
+
+    function refresh2() {
+    	$.getJSON("/recent210m/",  function(data) {
+        chart2.series[0].setData(data,true);
+    	});
+    }
+
+    setInterval(refresh2,3000);
+
 
 	var options3 = {
         chart: {
@@ -182,6 +222,9 @@
                             <div class="list-group">
                                 <div class="form-group">
                                     <div id="container" style="min-width:300px;height:400px"></div>
+                                </div>
+                                <div class="form-group">
+                                    <div id="container2" style="min-width:300px;height:400px"></div>
                                 </div>
                                 <div class="form-group">
                                     <div id="container3" style="min-width:300px;height:400px"></div>

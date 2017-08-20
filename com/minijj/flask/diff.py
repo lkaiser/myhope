@@ -233,7 +233,7 @@ class Diff(object):
             p1 = self.mex_price  #mex 卖
             p2 = self.ok_price   # ok 买
             p3 = self.ok_askprice # ok 卖
-            p4 = self.mex_bidprice #mex 买
+            p4 = self.mex_bidprice #mex 买  p3 - p4
             if (type(p1) == float and type(p2) == float  and type(p3) == float  and type(p4) == float):
                 self.conn.set(constants.ok_mex_price, (datetime.datetime.utcnow(), round(p1, 3), round(p4, 3),round(p3, 3), round(p2, 3)))
                 #print self.conn.get(constants.ok_mex_price)
@@ -298,7 +298,7 @@ class Diff(object):
         st.start()
 
 if __name__ == '__main__':
-    dif = Diff(10, 3000)
+    dif = Diff(50, 3000)
 
     dif.run()
 
