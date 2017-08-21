@@ -129,11 +129,13 @@ class OkHigher(object):
                         left_amount = -amount_change
 
                         okprice = self.lastevenuprice
-                        now_create = okprice - self.market.mex_asks_price  #两种算法，1用当前差价  2 用split_position最新平仓差价
+                        prices = self.conn.get(constants.ok_mex_price)
+                        now_create = prices[4] - prices[1]  #两种算法，1用当前差价  2 用split_position最新平仓差价
+                        last_create = now_create
                         while(self.split_position and left_amount>0):
                             last_pos = self.split_position.pop()
                             left_amount = left_amount - last_pos[0]
-                            now_create = last_pos[1]
+                            last_create = last_pos[1]
                             if (left_amount < 0):
                                 self.split_position.append((-left_amount, last_pos[1]))
                                 break
@@ -142,8 +144,9 @@ class OkHigher(object):
 
                         self.conn.set(self.slipkey, self.split_position)
                         logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                        self.basis_create = round(now_create + self.higher_back_distant - self.expected_profit, 3)
-                        self.conn.set(constants.higher_basic_create_key, self.basis_create)
+                        if (last_create - self.expected_profit + self.higher_back_distant) > now_create:#计算basic_create是否大于市场差价，大于，则说明平仓后再开仓需继续等待，小于则说明1 行情迅速反弹至下一建仓点以上，2被套，手动平仓，这2种情况都无需修改下一建仓点
+                            self.basis_create = round(last_create + self.higher_back_distant - self.expected_profit, 3)
+                            self.conn.set(constants.higher_basic_create_key, self.basis_create)
                         self.balancelock.release()
                         logger.info("#####balancelock release")
 

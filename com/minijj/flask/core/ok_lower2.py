@@ -128,12 +128,13 @@ class OkLower(object):
                         left_amount = -amount_change
 
                         okprice = self.lastevenuprice
-                        now_create = okprice - self.market.mex_asks_price
-
+                        prices = self.conn.get(constants.ok_mex_price)
+                        now_create = prices[3] - prices[2]  # 两种算法，1用当前差价  2 用split_position最新平仓差价
+                        last_create = now_create
                         while(self.split_position and left_amount>0):
                             last_pos = self.split_position.pop()
                             left_amount = left_amount-last_pos[0]
-                            now_create = last_pos[1]
+                            last_create = last_pos[1]
                             if(left_amount<0):
                                 self.split_position.append((-left_amount,last_pos[1]))
                                 break
@@ -142,8 +143,9 @@ class OkLower(object):
 
                         self.conn.set(self.slipkey, self.split_position)
                         logger.info("################ammout 减少了 "+bytes(amount_change)+"，持仓变化如下 #######################")
-                        self.basis_create = round(now_create - self.lower_back_distant + self.expected_profit,3)
-                        self.conn.set(constants.lower_basic_create_key, self.basis_create)
+                        if (last_create + self.expected_profit - self.higher_back_distant) < now_create:
+                            self.basis_create = round(now_create - self.lower_back_distant + self.expected_profit,3)
+                            self.conn.set(constants.lower_basic_create_key, self.basis_create)
                         self.balancelock.release()
                         logger.info("#####balancelock release")
 

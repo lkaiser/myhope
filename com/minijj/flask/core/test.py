@@ -74,7 +74,7 @@ class mexliquidation(object):
 
 
 if __name__ == '__main__':
-   m = mexliquidation()
+   #m = mexliquidation()
    # m.start()
    # while 1:
    #    pass
@@ -92,22 +92,26 @@ if __name__ == '__main__':
    print timenow
 
    redis = rediscon.Conn_db()
-   skey = constants.coin_skey
-   print redis.get(constants.lower_split_position)
-   okcoin = okcom.OkCoinComApi(constants.coin_key, constants.coin_skey)
-   print "########here"
-   print okcoin.get_userinfo()
+   #skey = constants.coin_skey
+   ps = redis.get(constants.lower_split_position)
+   amount = 0
+   for x in ps:
+       amount += x[0]
+   print "############amount=",amount
+   #okcoin = okcom.OkCoinComApi(constants.coin_key, constants.coin_skey)
+   # print "########here"
+   #print okcoin.get_userinfo()
 
-   mex = bitmex_api.Bitmex(constants.mex_skey,constants.mex_key)
-   mexall = mex.get_userCommission()
-   print "#########mex info"
-   print mexall
+   #mex = bitmex_api.Bitmex(constants.mex_skey,constants.mex_key)
+   #mexall = mex.get_userCommission()
+   #print "#########mex info"
+   #print mexall
 
-   print 4091.849-4099.22 <= -100
-
-   tradehis = []
-   tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'),15,"20",2+5-3))
-   tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'), 25, "50",1+7-2))
+   # print 4091.849-4099.22 <= -100
+   #
+   # tradehis = []
+   # tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'),15,"20",2+5-3))
+   # tradehis.append((datetime.datetime.now().strftime( '%Y-%m-%d %H:%M:%S'), 25, "50",1+7-2))
    #redis.set("tradehis",tradehis)
    #print redis.get("tradehis")
 
@@ -121,10 +125,10 @@ if __name__ == '__main__':
    #print a
    #test3.printcfg()
 
-   print "@@@@@@@@@2"
-   print bytes(constants.higher_back_distant)
-
-   print sys.path
+   # print "@@@@@@@@@2"
+   # print bytes(constants.higher_back_distant)
+   #
+   # print sys.path
 
    str = "[(2, -27), (2, -26.652), (2, -26), (2, -24.558), (2, -22.749), (2, -21.996), (2, -20.78), (2, -20.73), (1, -18.486), (2, -17.708), (2, -15.421)]"
    b = eval(str)
@@ -132,9 +136,9 @@ if __name__ == '__main__':
    print b
    print type(b[0])
 
-   print redis.get("fastforml")
-   redis.delete("fastforml")
-   print "###########wft",redis.get("fastforml")
+   # print redis.get("fastforml")
+   # redis.delete("fastforml")
+   # print "###########wft",redis.get("fastforml")
 
 
    m = hashlib.md5()
@@ -144,7 +148,7 @@ if __name__ == '__main__':
 
    #print constants.const.PI
 
-   logger.info("################ammout 增加了 " + bytes(0) + "，持仓变化如下 #######################")
+   #logger.info("################ammout 增加了 " + bytes(0) + "，持仓变化如下 #######################")
 
     #print "################",mex2.position("XBTM17")
 
