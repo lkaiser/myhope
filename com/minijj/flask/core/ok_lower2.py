@@ -31,6 +31,7 @@ class OkLower(object):
         self.status = False
         self.sellstatus = True #默认为true 否则 postion 进程有可能跑不起来
         self.buystatus = True #默认为true 否则 postion 进程有可能跑不起来
+        self.finished = True #所有进程结束
 
         self.conn = Conn_db()
         self.conn.set(constants.lower_max_size_key, self.MAX_Size)
@@ -81,6 +82,7 @@ class OkLower(object):
             if not self.status and not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
                 if last_time > 0:
                     logger.info("###############################Lower position thread shutdown");
+                    self.finished = True
                     break
                 else:
                     last_time += 1
@@ -427,6 +429,7 @@ class OkLower(object):
         if not self.status:
             logger.info("###############################Lower 跑起来了，哈哈哈");
             self.status = True
+            self.finished = False
             self.conn.set(constants.lower_buy_run_key, True)
             self.conn.set(constants.lower_sell_run_key, True)
             self.conn.set(constants.lower_main_run_key, True)
@@ -471,4 +474,14 @@ class OkLower(object):
         run = self.conn.get(constants.lower_sell_run_key)
         if not run:
             self.conn.set(constants.lower_sell_run_key,True)
+
+    def liquidAll(self):
+        if self.split_position:
+            amount = 0
+            for x in self.split_position:
+                amount += x[0]
+            self.okcoin.tradeRival(constants.lower_contract_type, amount, 3)
+
+    def finished(self):
+        return self.finished
 

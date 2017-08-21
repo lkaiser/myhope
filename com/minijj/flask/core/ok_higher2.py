@@ -31,6 +31,7 @@ class OkHigher(object):
         self.status = False
         self.sellstatus = True  # 默认为true 否则 postion 进程有可能跑不起来
         self.buystatus = True  # 默认为true 否则 postion 进程有可能跑不起来
+        self.finished = True  # 所有进程结束
 
         self.conn = Conn_db()
         self.conn.set(constants.higher_max_size_key, self.MAX_Size)
@@ -83,6 +84,7 @@ class OkHigher(object):
             if not self.status and not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
                 if last_time > 0:
                     logger.info("###############################Higher position thread shutdown");
+                    self.finished = True
                     break
                 else:
                     last_time += 1
@@ -99,7 +101,7 @@ class OkHigher(object):
                 self.ok_sell_balance += amount_change
 
                 # OKcoin挂单成交后，mex立刻以市价做出反向操作
-                if amount_change > 0:
+                if amount_change > 0: #status false之后不再开仓
                     holdokprice = (new_holding['sell_price_avg'] * (new_holding['sell_amount']) - init_holding['sell_price_avg'] * (init_holding['sell_amount'])) / amount_change
                     okprice = self.lastsellprice
                     logger.info("###########holding caculated price=" + bytes(holdokprice) + " while last sell price= " + bytes(okprice))
@@ -415,6 +417,7 @@ class OkHigher(object):
         if not self.status:
             logger.info("###############################Higher跑起来了，哈哈哈");
             self.status = True
+            self.finished = False
             self.conn.set(constants.higher_buy_run_key, True)
             self.conn.set(constants.higher_sell_run_key, True)
             self.conn.set(constants.higher_main_run_key, True)
@@ -459,3 +462,13 @@ class OkHigher(object):
         run = self.conn.get(constants.higher_sell_run_key)
         if not run:
             self.conn.set(constants.higher_sell_run_key,True)
+
+    def liquidAll(self):
+        if self.split_position:
+            amount = 0
+            for x in self.split_position:
+                amount += x[0]
+            self.okcoin.tradeRival(constants.higher_contract_type, amount, 4)
+
+    def finished(self):
+        return self.finished

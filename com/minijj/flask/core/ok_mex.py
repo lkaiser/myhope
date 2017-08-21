@@ -82,32 +82,34 @@ class TradeMexAndOk(object):
                     prices = redis.get(constants.ok_mex_price)
                     high = redis.get(constants.strategy_higher_key)
                     low = redis.get(constants.strategy_lower_key)
-                    hposition = redis.get(constants.higher_split_position)
-                    lposition = redis.get(constants.lower_split_position)
-                    if hposition:
-                        lastpos = hposition.pop()
-                        if lastpos[1] -(prices[3] - prices[2])  > 10:#当前差价接近higher盈利平仓点时，切到higher
-                            t.startHserver()
-                    if lposition:
-                        last_pos = lposition.pop()
-                        if prices[4] - prices[1] - last_pos[1] > 10:
-                            t.startLserver()
+                    # hposition = redis.get(constants.higher_split_position)
+                    # lposition = redis.get(constants.lower_split_position)
+                    # if hposition:
+                    #     lastpos = hposition.pop()
+                    #     if lastpos[1] -(prices[3] - prices[2])  > 10:#当前差价接近higher盈利平仓点时，切到higher
+                    #         t.startHserver()
+                    # if lposition:
+                    #     last_pos = lposition.pop()
+                    #     if prices[4] - prices[1] - last_pos[1] > 10:
+                    #         t.startLserver()
 
-                    if prices[4] - prices[1] - low < 25:
+                    if prices[4] - prices[1] - low < 15:
                         t.stopOpenH()
-                    #else:
-                    #    t.remainOpenH()
+                    else:
+                        t.remainOpenH()
 
-                    if high - (prices[3]-prices[2]) <25:
+                    if high - (prices[3]-prices[2]) <15:
                         t.stopOpenL()
-                    #else:
-                    #    t.remainOpenL()
+                    else:
+                        t.remainOpenL()
 
                     if (prices[4] - prices[1]) >= high:
                         logger.info("#########high strategy acitve prices[4] = "+bytes(prices[4])+" prices[1] = "+bytes(prices[1]) +" high = "+bytes(high))
+                        t.liquidL()
                         t.startHserver(high)
                     if (prices[3] - prices[2]) <= low:
                         logger.info("#########low strategy acitve prices[3] = " + bytes(prices[3]) + " prices[2] = " + bytes(prices[2]) + " low = " + bytes(low))
+                        t.liquidH()
                         t.startLserver(low)
             except:
                 pass
@@ -157,6 +159,12 @@ class TradeMexAndOk(object):
 
     def remainOpenL(self):
         self.OkLower.remainOpen()
+
+    def liquidH(self):
+        self.OkHigher.liquidAll()
+
+    def liquidL(self):
+        self.OkLower.liquidAll()
 
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
