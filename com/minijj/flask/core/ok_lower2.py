@@ -89,7 +89,7 @@ class OkLower(object):
             runmain = self.conn.get(constants.lower_main_run_key)
             if not runmain:
                 logger.info("###############lower position suspend##################")
-                time.sleep(2)
+                #time.sleep(2)
                 #continue
 
             try:
@@ -257,6 +257,10 @@ class OkLower(object):
             order_id[:] = []
             end = datetime.datetime.now()
             price = self.market.q_asks_price.get()
+            if not self.status:
+                self.buystatus = False
+                logger.info("###############################Lower buy thread shutdown");
+                break
             logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds,q_asks_price= "+bytes(price))
             if self.balancelock.acquire():
                 logger.info("#############balancelock acuire")
@@ -326,6 +330,10 @@ class OkLower(object):
             laststatus = True
             start = datetime.datetime.now()
             price = self.market.q_bids_price.get()
+            if not self.status:
+                self.sellstatus = False
+                logger.info("###############################Lower sell thread shutdown");
+                break
             end = datetime.datetime.now()
             logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
             if order_id:
@@ -462,16 +470,18 @@ class OkLower(object):
             else:
                 logger.info("###############################wo cao,lower上次还没有退出来，没法启动");
                 return False
+        else:
+            return True
 
     def stop(self):
         if self.status:
             logger.info("###############################Lower shutdown");
             self.status = False
-            time.sleep(0.5)
+            #time.sleep(0.5)
             #self.position_mon(True)
-            self.conn.set(constants.lower_buy_run_key, False)
-            self.conn.set(constants.lower_sell_run_key, False)
-            self.conn.set(constants.lower_main_run_key, False)
+            # self.conn.set(constants.lower_buy_run_key, False)
+            # self.conn.set(constants.lower_sell_run_key, False)
+            # self.conn.set(constants.lower_main_run_key, False)
             self.okcoin.cancel_all(self.contract_type)
 
     def stopOpen(self):

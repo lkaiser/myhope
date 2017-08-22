@@ -2,6 +2,8 @@
 import sys
 import os
 import datetime
+import threading
+import time
 #print sys.path
 
 parentpath = os.path.dirname(sys.path[0])
@@ -46,5 +48,55 @@ print b[0:30]
 
 a = 8.5
 b = None
+
+redis.set(constants.lower_server,False)
+redis.set(constants.lower_server,0)
+redis.delete(constants.lower_server)
+rs = redis.get(constants.lower_server)
+print isinstance(rs,bool)
+
+def tes(pa=None):
+    if pa:
+        print pa
+    else:
+        print "no pa"
+
+
+tes("ha")
+tes()
+
+def event1(event):
+    event.clear()
+    print "event1 要卡住咯"
+    event.wait()
+    print "event1 活过来了"
+
+def event2(event):
+    event.clear()
+    print "event2 要卡住咯"
+    event.wait()
+    print "event2 活过来了"
+
+event = threading.Event()
+
+pm = threading.Thread(target=event1,args=(event,))
+pm.setDaemon(True)
+pm.start()
+
+time.sleep(2)
+
+pm2 = threading.Thread(target=event2,args=(event,))
+pm2.setDaemon(True)
+pm2.start()
+
+while 1:
+    print "我是主进程"
+    time.sleep(5)
+    print "你们谁卡住了，我来释放你们"
+    event.set()
+    print "孩儿们，玩去吧"
+    time.sleep(10)
+    break
+
 
 #print a + b

@@ -5,6 +5,7 @@ import threading
 import time
 import datetime
 
+
 import constants as constants
 
 from db.rediscon import Conn_db
@@ -79,10 +80,17 @@ class OkHigher(object):
         init_holding = None
         okposition = self.okcoin.get_position(self.contract_type)['holding']
         last_time = 0
+        roundtimes = 0
         if okposition:
             init_holding = okposition[0]
         while 1:
-            self.event.set()
+            if not self.event.is_set:
+                if roundtimes > 0:
+                    roundtimes = 0
+                    self.event.set() #利用event特性，roundtimes> 0证明 wait之后，postion_mon至少跑完一轮,此时buy,sell进程皆可释放
+                else :
+                    roundtimes +=1
+
             if not self.status and not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
                 if last_time > 0:
                     logger.info("###############################Higher position thread shutdown");
@@ -93,7 +101,7 @@ class OkHigher(object):
             runmain = self.conn.get(constants.higher_main_run_key)
             if not runmain:
                 logger.info("###############higher position suspend##################")
-                time.sleep(2)
+                #time.sleep(2)
                 #continue
             try:
                 new_holding = self.okcoin.get_position(self.contract_type)['holding'][0]
@@ -208,14 +216,18 @@ class OkHigher(object):
             runmain = self.conn.get(constants.higher_main_run_key)
             if not run or not runmain:
                 if laststatus:
-                    self.okcoin.cancel_all(self.contract_type)
+                    self.okcoin.cancel_all(self.contract_type) #挂起之后需要取消所有挂单
                     laststatus = False
                 logger.info("###############buy supend##################")
-                time.sleep(2)
+                time.sleep(1)
                 continue
             laststatus = True
             start = datetime.datetime.now()
             price = self.market.q_bids_price.get()
+            if not self.status:
+                self.buystatus = False
+                logger.info("###############################Higher buy thread shutdown");
+                break
             end = datetime.datetime.now()
             logger.info("############buy order1 spend" + bytes(((end - start).microseconds) / 1000.0) + "milli seconds ")
             if order_id:
@@ -233,7 +245,7 @@ class OkHigher(object):
                         logger.info(cancel_result)
                         if cancel_result['error_code'] != 20015 and cancel_result['error_code'] != 20016:
                             logger.info("##########注意，新的错误来了#############")
-                            time.sleep(2)
+                            time.sleep(1)
                             cycletimes += 1
                             if cycletimes > 20:
                                 logger.info("##############terrible sycle on cancel buy order##########")
@@ -246,8 +258,6 @@ class OkHigher(object):
                                 #    time.sleep(2)
                                 self.event.clear() #默认不需要阻塞的，event应该为true,当需要阻塞时，event设为 false 并wait
                                 self.event.wait()
-
-
                     else:
                         cycletimes = 0
             order_id[:] = []
@@ -265,8 +275,7 @@ class OkHigher(object):
                     trade_back = {}
 
                     okprice = self.conn.get(constants.ok_mex_price)
-                    logger.info(
-                        "#######current ok ask price =" + bytes(okprice[3]) + " while wanna price=" + bytes(price))
+                    logger.info("#######current ok ask price =" + bytes(okprice[3]) + " while wanna price=" + bytes(price))
                     if (okprice[3] - price > 5):
                         continue
 
@@ -359,6 +368,10 @@ class OkHigher(object):
             order_id[:] = []
             end = datetime.datetime.now()
             price = self.market.q_asks_price.get()
+            if not self.status:
+                self.sellstatus = False
+                logger.info("###############################Higher sell thread shutdown");
+                break
             logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds while q_ask_price = "+ bytes(price))
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
@@ -457,18 +470,21 @@ class OkHigher(object):
                 check = threading.Thread(target=self.setting_check)
                 check.setDaemon(True)
                 check.start()
+                return True
             else:
                 logger.info("###############################wo cao,higher上次还没有退出来，没法启动");
+                return False
+        else:
+            return True
 
     def stop(self):
         if self.status:
             logger.info("###############################Higher shutdown");
             self.status = False
-            time.sleep(0.5)
-            #self.position_mon(True)
-            self.conn.set(constants.higher_buy_run_key, False)
-            self.conn.set(constants.higher_sell_run_key, False)
-            self.conn.set(constants.higher_main_run_key, False)
+            #time.sleep(0.5)
+            #self.conn.set(constants.higher_buy_run_key, False)
+            #self.conn.set(constants.higher_sell_run_key, False)
+            #self.conn.set(constants.higher_main_run_key, False)
             self.okcoin.cancel_all(self.contract_type)
 
     def stopOpen(self):
@@ -490,3 +506,4 @@ class OkHigher(object):
 
     def finished(self):
         return self.finished
+

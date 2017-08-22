@@ -40,17 +40,7 @@ $(document).ready(function() {
         var self = this;
         var id = $(this).attr("id");
         $.get("/threadctl/"+id,function(data){
-            if("False" == data) {
-                var allbtns = $(self).parent().parent().find('button')
-                allbtns.addClass("btn-warning")
-                allbtns.html("停止")
-                allbtns.removeClass("btn-success")
-            }else {
-                var allbtns = $(self).parent().parent().find('button')
-                allbtns.removeClass("btn-warning")
-                allbtns.html("运行中")
-                allbtns.addClass("btn-success")
-            }
+            window.location.href = "/admin"
         })
     });
 
@@ -93,11 +83,8 @@ $(document).ready(function() {
 {% block content %}
 <div id="page-wrapper">
             <div class="row">
-                <div class="col-lg-6">
-                    交易程序
-                </div>
-                <div class="col-lg-6">
-                    {% if tradeserver=="True" %}<button type="button" class="btn btn-success" id="trade" name="tradeserver">运行中{% else %}<button type="button" class="btn btn-warning" id="trade" name="tradeserver">停止{% endif %}</button>
+                <div class="col-lg-12 text-center">
+                    程序{% if tradeserver=="True" %}<button type="button" class="btn btn-success" id="trade" name="tradeserver">运行中{% else %}<button type="button" class="btn btn-warning" id="trade" name="tradeserver">停止{% endif %}</button>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>

@@ -6,6 +6,8 @@ import sys
 import threading
 import time
 import datetime
+import inspect
+import ctypes
 
 import websocket
 from retrying import retry
@@ -158,6 +160,7 @@ class TradeMexAndOk(object):
 
     def stopHserver(self):
         self.OkHigher.stop()
+        self.redis.set(constants.higher_server, False)
 
     def startLserver(self,basis=None):
         self.OkHigher.stop()
@@ -166,6 +169,7 @@ class TradeMexAndOk(object):
 
     def stopLserver(self):
         self.OkLower.stop()
+        self.redis.set(constants.lower_server, False)
 
     def stopOpenH(self):
         self.OkHigher.stopOpen()
@@ -187,6 +191,24 @@ class TradeMexAndOk(object):
 
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
+
+
+    def async_raise(self,tid, exctype):
+        """raises the exception, performs cleanup if needed"""
+        tid = ctypes.c_long(tid)
+        if not inspect.isclass(exctype):
+            exctype = type(exctype)
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
+        if res == 0:
+            raise ValueError("invalid thread id")
+        elif res != 1:
+            # """if it returns a number greater than one, you're in trouble,
+            # and you should call it again with exc=NULL to revert the effect"""
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+            raise SystemError("PyThreadState_SetAsyncExc failed")
+
+    def stop_thread(self,thread):
+        self.async_raise(thread.ident, SystemExit)
 
     def cal_order(self, okposition, mexposition):
         sposition = self.conn.get(self.slipkey)

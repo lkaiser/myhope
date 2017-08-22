@@ -321,7 +321,6 @@ def threadctl(thread):
         if not key:
             redis.set(constants.command_l_server, key) #开hserver 一定要关 lserver
         redis.set(constants.command_h_server, not key)
-        redis.set(constants.higher_server, not key)
 
     if "strategy" == thread:
         key = redis.get(constants.strategy_on_key)
