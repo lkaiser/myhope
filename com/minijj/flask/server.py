@@ -182,13 +182,20 @@ def liquid():
         okcoin.tradeRival(constants.lower_contract_type, int(count), 3)
         return "True"
     if "liquidhall" == ac:
-        amount = okcoin.get_position(constants.higher_contract_type)['holding'][0]['sell_amount']
-        okcoin.tradeRival(constants.higher_contract_type, amount, 4)
+        sp = redis.get(constants.higher_split_position)
+        if sp:
+            amount = 0
+            for x in sp:
+                amount += x[0]
+            okcoin.tradeRival(constants.higher_contract_type, amount, 4)
         return "True"
     if "liquidlall" == ac:
-        amount = okcoin.get_position(constants.lower_contract_type)['holding'][0]['buy_amount']
-        #print amount
-        okcoin.tradeRival(constants.lower_contract_type, amount, 3)
+        sp = redis.get(constants.higher_split_position)
+        if sp:
+            amount = 0
+            for x in sp:
+                amount += x[0]
+            okcoin.tradeRival(constants.higher_contract_type, amount, 3)
         return "True"
     return "WTF"
 
