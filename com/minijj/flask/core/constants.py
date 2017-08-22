@@ -23,6 +23,9 @@ trade_server = "trade_server"
 higher_server = "higher_server"
 lower_server = "lower_server"
 
+command_h_server = "command_h_server"
+command_l_server = "command_l_server"
+
 ok_mex_price = "ok_mex_price"
 
 

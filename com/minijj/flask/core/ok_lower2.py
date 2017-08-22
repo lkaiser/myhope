@@ -145,8 +145,8 @@ class OkLower(object):
 
                         self.conn.set(self.slipkey, self.split_position)
                         logger.info("################ammout 减少了 "+bytes(amount_change)+"，持仓变化如下 #######################")
-                        if (last_create + self.expected_profit - self.higher_back_distant) < now_create:
-                            self.basis_create = round(now_create - self.lower_back_distant + self.expected_profit,3)
+                        if (last_create + self.expected_profit - self.lower_back_distant) < now_create:
+                            self.basis_create = round(last_create - self.lower_back_distant + self.expected_profit,3)
                             self.conn.set(constants.lower_basic_create_key, self.basis_create)
                         self.balancelock.release()
                         logger.info("#####balancelock release")

@@ -67,16 +67,24 @@ class TradeMexAndOk(object):
         while 1:
             try:
                 time.sleep(1)
-                hserver = redis.get(constants.higher_server)
-                lserver = redis.get(constants.lower_server)
-                if hserver:
-                    self.startHserver()
-                else:
-                    self.stopHserver()
-                if lserver:
-                    self.startLserver()
-                else:
-                    self.stopLserver()
+                hserver = redis.get(constants.command_h_server)
+                lserver = redis.get(constants.command_l_server)
+
+                if isinstance(hserver, bool):
+                    logger.info("#########higher command "+str(hserver))
+                    if hserver:
+                        self.startHserver()
+                    else:
+                        self.stopHserver()
+                    redis.delete(constants.command_h_server)
+
+                if isinstance(lserver, bool):
+                    logger.info("#########lower command " + str(lserver))
+                    if lserver:
+                        self.startLserver()
+                    else:
+                        self.stopLserver()
+                    redis.delete(constants.command_l_server)
 
                 if redis.get(constants.strategy_on_key):
                     prices = redis.get(constants.ok_mex_price)

@@ -75,6 +75,7 @@ class Bitmex(object):
         req = requests.get("https://www.bitmex.com/api/v1/position", headers=headers,
                            )
         return_l = req.json()
+        #print return_l
         for i in return_l:
             if i['symbol'] == symbol:
                 count = return_l.index(i)
