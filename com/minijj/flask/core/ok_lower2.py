@@ -103,8 +103,10 @@ class OkLower(object):
                 #OKcoin挂单成交后，mex立刻以市价做出反向操作
                 if amount_change > 0:
                     holdokprice = (new_holding['buy_price_avg'] * new_holding['buy_amount'] - init_holding['buy_price_avg'] * init_holding['buy_amount']) / amount_change
-                    okprice = self.lastsellprice
-                    logger.info("###########holding caculated price=" + bytes(holdokprice) + " while last sell price= " + bytes(okprice))
+                    okprice = holdokprice
+                    if self.conn.get(constants.use_last_price):
+                        okprice = self.lastsellprice
+                    logger.info("###########holding caculated price=" + bytes(holdokprice) + " while last sell price= " + bytes(self.lastsellprice))
                     sell_price = round(self.market.mex_bids_price - 5, 1)#以成交为第一目的
                     logger.info(init_holding)
                     logger.info(new_holding)
@@ -429,32 +431,35 @@ class OkLower(object):
     def start(self,basis=None):
         #self.server.test()
         if not self.status:
-            logger.info("###############################Lower 跑起来了，哈哈哈");
-            self.status = True
-            self.finished = False
-            self.conn.set(constants.lower_buy_run_key, True)
-            self.conn.set(constants.lower_sell_run_key, True)
-            self.conn.set(constants.lower_main_run_key, True)
+            if self.finished:
+                logger.info("###############################Lower 跑起来了，哈哈哈");
+                self.status = True
+                self.finished = False
+                self.conn.set(constants.lower_buy_run_key, True)
+                self.conn.set(constants.lower_sell_run_key, True)
+                self.conn.set(constants.lower_main_run_key, True)
 
-            if basis:
-                self.conn.set(constants.lower_basic_create_key, basis)
-                self.basis_create = basis
+                if basis:
+                    self.conn.set(constants.lower_basic_create_key, basis)
+                    self.basis_create = basis
 
-            pm = threading.Thread(target=self.position_mon,args=(False,))
-            pm.setDaemon(True)
-            pm.start()
+                pm = threading.Thread(target=self.position_mon,args=(False,))
+                pm.setDaemon(True)
+                pm.start()
 
-            sell = threading.Thread(target=self.submit_sell_order)
-            sell.setDaemon(True)
-            sell.start()
+                sell = threading.Thread(target=self.submit_sell_order)
+                sell.setDaemon(True)
+                sell.start()
 
-            buy = threading.Thread(target=self.submit_buy_order)
-            buy.setDaemon(True)
-            buy.start()
+                buy = threading.Thread(target=self.submit_buy_order)
+                buy.setDaemon(True)
+                buy.start()
 
-            check = threading.Thread(target=self.setting_check)
-            check.setDaemon(True)
-            check.start()
+                check = threading.Thread(target=self.setting_check)
+                check.setDaemon(True)
+                check.start()
+            else:
+                logger.info("###############################wo cao,lower上次还没有退出来，没法启动");
 
     def stop(self):
         if self.status:

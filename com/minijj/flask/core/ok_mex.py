@@ -215,7 +215,7 @@ t.start()
 
 while status:
     status = redis.get(constants.trade_server)
-    logger.info("################# status ="+str(status))
+    #logger.info("################# status ="+str(status))
     time.sleep(2)
     pass
 t.stop()
