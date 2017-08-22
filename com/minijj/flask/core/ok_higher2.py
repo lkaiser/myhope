@@ -32,6 +32,7 @@ class OkHigher(object):
         self.sellstatus = True  # 默认为true 否则 postion 进程有可能跑不起来
         self.buystatus = True  # 默认为true 否则 postion 进程有可能跑不起来
         self.finished = True  # 所有进程结束
+        self.event = threading.Event()
 
         self.conn = Conn_db()
         self.conn.set(constants.higher_max_size_key, self.MAX_Size)
@@ -81,6 +82,7 @@ class OkHigher(object):
         if okposition:
             init_holding = okposition[0]
         while 1:
+            self.event.set()
             if not self.status and not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
                 if last_time > 0:
                     logger.info("###############################Higher position thread shutdown");
@@ -200,8 +202,8 @@ class OkHigher(object):
                 self.buystatus = False
                 logger.info("###############################Higher buy thread shutdown");
                 break
-            if self.amountsigal == 0:
-                time.sleep(3)
+            if not self.event.is_set():
+                self.event.wait()
             run = self.conn.get(constants.higher_buy_run_key)
             runmain = self.conn.get(constants.higher_main_run_key)
             if not run or not runmain:
@@ -239,9 +241,13 @@ class OkHigher(object):
                         else:
                             cycletimes = 0
                             if cancel_result['error_code'] == 20015:
-                                self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
-                                while self.amountsigal < 2:
-                                    time.sleep(2)
+                                #self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
+                                #while self.amountsigal < 2:
+                                #    time.sleep(2)
+                                self.event.clear() #默认不需要阻塞的，event应该为true,当需要阻塞时，event设为 false 并wait
+                                self.event.wait()
+
+
                     else:
                         cycletimes = 0
             order_id[:] = []
@@ -301,8 +307,10 @@ class OkHigher(object):
                 self.sellstatus = False
                 logger.info("###############################Higher sell thread shutdown");
                 break
-            if self.amountsigal == 0:
-                time.sleep(3)
+            #if self.amountsigal == 0:
+            #    time.sleep(3)
+            if not self.event.is_set():
+                self.event.wait()
             run = self.conn.get(constants.higher_sell_run_key)
             runmain = self.conn.get(constants.higher_main_run_key)
             if not run or not runmain:
@@ -341,8 +349,10 @@ class OkHigher(object):
                         continue  # 取消状态只有2种，取消成功或者20015交易成功无法取消,其它状态都跳回重新取消
                     else:
                         self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认basis_create已经更新
-                        while self.amountsigal < 2:
-                            time.sleep(3)
+                        #while self.amountsigal < 2:
+                        #    time.sleep(3)
+                        self.event.clear()  # 默认不需要阻塞的，event应该为true,当需要阻塞时，event设为 false 并wait
+                        self.event.wait()
                         cycletimes = 0
                 else:
                     cycletimes = 0
