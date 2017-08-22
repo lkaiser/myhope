@@ -313,13 +313,14 @@ def threadctl(thread):
     if "server" == thread:
         key = redis.get(constants.lower_server)
         if not key:
-            redis.set(constants.higher_server, key)
-        redis.set(constants.lower_server, not key)
+            redis.set(constants.command_h_server, key)#开lserver 一定要关 hserver
+        redis.set(constants.command_l_server, not key)
 
     if "server2" == thread:
         key = redis.get(constants.higher_server)
         if not key:
-            redis.set(constants.lower_server, key)
+            redis.set(constants.command_l_server, key) #开hserver 一定要关 lserver
+        redis.set(constants.command_h_server, not key)
         redis.set(constants.higher_server, not key)
 
     if "strategy" == thread:

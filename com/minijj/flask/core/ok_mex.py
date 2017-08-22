@@ -43,6 +43,11 @@ class TradeMexAndOk(object):
 
         mex_key = constants.mex_key
         mex_skey = constants.mex_skey
+
+        self.redis = Conn_db()
+        self.redis.set(constants.trade_server, True)
+        self.status = True
+
         self.mex = bitmex.BitMEX(base_url='https://www.bitmex.com/api/v1/',symbol=constants.higher_mex_contract_type, apiKey=mex_key, apiSecret=mex_skey)
         self.contract_type = constants.higher_contract_type
         self.okcoin = okcom.OkCoinComApi(key, skey)
@@ -67,8 +72,8 @@ class TradeMexAndOk(object):
         while 1:
             try:
                 time.sleep(1)
-                hserver = redis.get(constants.command_h_server)
-                lserver = redis.get(constants.command_l_server)
+                hserver = self.redis.get(constants.command_h_server)
+                lserver = self.redis.get(constants.command_l_server)
 
                 if isinstance(hserver, bool):
                     logger.info("#########higher command "+str(hserver))
@@ -76,7 +81,7 @@ class TradeMexAndOk(object):
                         self.startHserver()
                     else:
                         self.stopHserver()
-                    redis.delete(constants.command_h_server)
+                    self.redis.delete(constants.command_h_server)
 
                 if isinstance(lserver, bool):
                     logger.info("#########lower command " + str(lserver))
@@ -84,14 +89,14 @@ class TradeMexAndOk(object):
                         self.startLserver()
                     else:
                         self.stopLserver()
-                    redis.delete(constants.command_l_server)
+                    self.redis.delete(constants.command_l_server)
 
-                if redis.get(constants.strategy_on_key):
-                    prices = redis.get(constants.ok_mex_price)
-                    high = redis.get(constants.strategy_higher_key)
-                    low = redis.get(constants.strategy_lower_key)
-                    # hposition = redis.get(constants.higher_split_position)
-                    # lposition = redis.get(constants.lower_split_position)
+                if self.redis.get(constants.strategy_on_key):
+                    prices = self.redis.get(constants.ok_mex_price)
+                    high = self.redis.get(constants.strategy_higher_key)
+                    low = self.redis.get(constants.strategy_lower_key)
+                    # hposition = self.redis.get(constants.higher_split_position)
+                    # lposition = self.redis.get(constants.lower_split_position)
                     # if hposition:
                     #     lastpos = hposition.pop()
                     #     if lastpos[1] -(prices[3] - prices[2])  > 10:#当前差价接近higher盈利平仓点时，切到higher
@@ -122,13 +127,17 @@ class TradeMexAndOk(object):
             except:
                 pass
 
-    def initcfg(self,redis):
-        redis.set(constants.strategy_on_key,False)
-        redis.set(constants.strategy_higher_key, 0)
-        redis.set(constants.strategy_lower_key, 0)
+    def initcfg(self):
+        self.redis.set(constants.strategy_on_key,False)
+        self.redis.set(constants.strategy_higher_key, 0)
+        self.redis.set(constants.strategy_lower_key, 0)
 
-        redis.set(constants.higher_server,False)
-        redis.set(constants.lower_server, False)
+        self.redis.set(constants.higher_server,False)
+        self.redis.set(constants.lower_server, False)
+
+    def upStatu(self):
+        self.status = self.redis.get(constants.trade_server)
+        return self.status
 
     def start(self):
         self.marketPrice.start()
@@ -144,14 +153,16 @@ class TradeMexAndOk(object):
 
     def startHserver(self,basis=None):
         self.OkLower.stop()
-        self.OkHigher.start(basis)
+        rs = self.OkHigher.start(basis)
+        self.redis.set(constants.higher_server, rs)
 
     def stopHserver(self):
         self.OkHigher.stop()
 
     def startLserver(self,basis=None):
         self.OkHigher.stop()
-        self.OkLower.start(basis)
+        rs = self.OkLower.start(basis)
+        self.redis.set(constants.lower_server, rs)
 
     def stopLserver(self):
         self.OkLower.stop()
@@ -213,17 +224,11 @@ class TradeMexAndOk(object):
         self.okcoin.cancel_all(self.contract_type)
 
 
-redis = Conn_db()
-redis.set(constants.trade_server, True)
-status = True
-
 t = TradeMexAndOk()
-t.initcfg(redis)
+t.initcfg()
 t.start()
 
-while status:
-    status = redis.get(constants.trade_server)
-    #logger.info("################# status ="+str(status))
+while t.upStatu():
     time.sleep(2)
     pass
 t.stop()

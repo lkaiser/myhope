@@ -458,8 +458,10 @@ class OkLower(object):
                 check = threading.Thread(target=self.setting_check)
                 check.setDaemon(True)
                 check.start()
+                return True
             else:
                 logger.info("###############################wo cao,lower上次还没有退出来，没法启动");
+                return False
 
     def stop(self):
         if self.status:
