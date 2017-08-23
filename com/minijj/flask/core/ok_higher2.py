@@ -84,7 +84,7 @@ class OkHigher(object):
         if okposition:
             init_holding = okposition[0]
         while 1:
-            if not self.event.is_set:
+            if not self.event.isSet():
                 if roundtimes > 0:
                     roundtimes = 0
                     self.event.set() #利用event特性，roundtimes> 0证明 wait之后，postion_mon至少跑完一轮,此时buy,sell进程皆可释放
