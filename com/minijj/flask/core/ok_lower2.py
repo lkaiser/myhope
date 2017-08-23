@@ -207,7 +207,7 @@ class OkLower(object):
         while 1:
             if not self.status:
                 self.buystatus = False
-                logger.info("###############################Lower buy thread shutdown");
+                logger.info("###############################Lower 平仓 thread shutdown");
                 break
             if self.amountsigal == 0:
                 time.sleep(3)
@@ -259,7 +259,7 @@ class OkLower(object):
             price = self.market.q_asks_price.get()
             if not self.status:
                 self.buystatus = False
-                logger.info("###############################Lower buy thread shutdown");
+                logger.info("###############################Lower 平仓 thread shutdown");
                 break
             logger.info("############buy order2 spend"+bytes(((end - start).microseconds)/1000.0)+" milli seconds,q_asks_price= "+bytes(price))
             if self.balancelock.acquire():
@@ -275,7 +275,7 @@ class OkLower(object):
 
                     okprice = self.conn.get(constants.ok_mex_price)
                     logger.info(
-                        "#######current ok ask price =" + bytes(okprice[4]) + " while wanna price=" + bytes(price))
+                        "#######current ok bid price =" + bytes(okprice[4]) + " while wanna 平仓 price=" + bytes(price))
                     if (price - okprice[4] > 5):
                         continue
 
@@ -314,7 +314,7 @@ class OkLower(object):
 
             if not self.status:
                 self.sellstatus = False
-                logger.info("###############################Lower sell thread shutdown");
+                logger.info("###############################Lower 开仓 thread shutdown");
                 break
             if self.amountsigal == 0:#有平仓或开仓，暂停，优先 position进程查询持仓状况
                 time.sleep(3)
@@ -332,7 +332,7 @@ class OkLower(object):
             price = self.market.q_bids_price.get()
             if not self.status:
                 self.sellstatus = False
-                logger.info("###############################Lower sell thread shutdown");
+                logger.info("###############################Lower 开仓 thread shutdown");
                 break
             end = datetime.datetime.now()
             logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
@@ -371,7 +371,7 @@ class OkLower(object):
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
             okprice = self.conn.get(constants.ok_mex_price)
-            logger.info("#######current ok ask price =" + bytes(okprice[3]) + " while wanna price=" + bytes(price))
+            logger.info("#######current ok ask price =" + bytes(okprice[3]) + " while wanna 开仓 price=" + bytes(price))
             if (okprice[3] - price > 5):
                 continue
 

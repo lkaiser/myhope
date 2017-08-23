@@ -91,11 +91,11 @@ pm2.start()
 
 while 1:
     print "我是主进程"
-    time.sleep(5)
+    time.sleep(2)
     print "你们谁卡住了，我来释放你们"
     event.set()
     print "孩儿们，玩去吧"
-    time.sleep(10)
+    time.sleep(2)
     break
 
 
