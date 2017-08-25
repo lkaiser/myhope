@@ -17,9 +17,11 @@ from mexliquidation2 import mexliquidation
 import marketPrice
 from ok_higher2 import OkHigher
 from ok_lower2 import OkLower
+from holdposition import HoldPostion
 from api import bitmex_api
 from db.rediscon import Conn_db
 from market_maker import bitmex
+from httpserver import TradeHTTPServer,MyHandler
 
 import sys
 import os
@@ -58,16 +60,18 @@ class TradeMexAndOk(object):
         self.marketPrice = marketPrice.MarketPrice(self.okcoin)
         self.mexliquidation = mexliquidation(self.mex)
         self.OkHigher = OkHigher(
-            self.okcoin, self.mex, self._mex, self.marketPrice,self.mexliquidation, constants.higher_contract_type,
+            self.okcoin, self.mex, self._mex, self.marketPrice, constants.higher_contract_type,
             constants.higher_max_size, constants.higher_deal_amount, constants.higher_expected_profit,
             constants.higher_basis_create, constants.higher_back_distant, constants.higher_step_price)
 
         self.OkLower = OkLower(
-            self.okcoin, self.mex, self._mex, self.marketPrice, self.mexliquidation, constants.lower_contract_type,
+            self.okcoin, self.mex, self._mex, self.marketPrice, constants.lower_contract_type,
             constants.lower_max_size, constants.lower_deal_amount, constants.lower_expected_profit,
             constants.lower_basis_create, constants.lower_back_distant, constants.lower_step_price)
 
         self.mexliquidation.setServers(self.OkHigher,self.OkLower)
+        self.position = HoldPostion(self.okcoin,self.marketPrice,self.mexliquidation,self.OkHigher,self.OkLower)
+        self.httpd = None
         # sys.exit(0)
 
     def setting_check(self):
@@ -97,16 +101,6 @@ class TradeMexAndOk(object):
                     prices = self.redis.get(constants.ok_mex_price)
                     high = self.redis.get(constants.strategy_higher_key)
                     low = self.redis.get(constants.strategy_lower_key)
-                    # hposition = self.redis.get(constants.higher_split_position)
-                    # lposition = self.redis.get(constants.lower_split_position)
-                    # if hposition:
-                    #     lastpos = hposition.pop()
-                    #     if lastpos[1] -(prices[3] - prices[2])  > 10:#当前差价接近higher盈利平仓点时，切到higher
-                    #         t.startHserver()
-                    # if lposition:
-                    #     last_pos = lposition.pop()
-                    #     if prices[4] - prices[1] - last_pos[1] > 10:
-                    #         t.startLserver()
 
                     if prices[4] - prices[1] - low < 15:
                         t.stopOpenH()
@@ -141,22 +135,53 @@ class TradeMexAndOk(object):
         self.status = self.redis.get(constants.trade_server)
         return self.status
 
+    def startHttp(self):
+        serveaddr = ('127.0.0.1', 8000)
+        self.httpd = TradeHTTPServer(serveaddr, MyHandler)
+        self.httpd.setTrade(self)
+        print "Base serve is start add is %s port is %d" % (serveaddr[0], serveaddr[1])
+        self.httpd.serve_forever()
+
     def start(self):
+        self.initcfg()
         self.marketPrice.start()
         self.mexliquidation.start()
+
+        self.position.start()
 
         check = threading.Thread(target=self.setting_check)
         check.setDaemon(True)
         check.start()
 
+        print "I'm starting postion now"
+        http = threading.Thread(target=self.startHttp)
+        http.setDaemon(True)
+        http.start()
+
     def stop(self):
         self.OkHigher.stop()
         self.OkLower.stop()
+        self.httpd.shutdown()
+
+    def switchHserver(self):
+        rs = self.redis.get(constants.higher_server)
+        if rs:
+            self.stopHserver()
+        else:
+            self.startHserver()
+
+    def switchLserver(self):
+        rs = self.redis.get(constants.lower_server)
+        if rs:
+            self.stopLserver()
+        else:
+            self.startLserver()
 
     def startHserver(self,basis=None):
         self.OkLower.stop()
-        rs = self.OkHigher.start(basis)
-        self.redis.set(constants.higher_server, rs)
+        self.OkHigher.start(basis)
+        self.redis.set(constants.higher_server, True)
+        self.redis.set(constants.lower_server, False)
 
     def stopHserver(self):
         self.OkHigher.stop()
@@ -164,24 +189,43 @@ class TradeMexAndOk(object):
 
     def startLserver(self,basis=None):
         self.OkHigher.stop()
-        rs = self.OkLower.start(basis)
-        self.redis.set(constants.lower_server, rs)
+        self.OkLower.start(basis)
+        self.redis.set(constants.lower_server, True)
+        self.redis.set(constants.higher_server, False)
 
     def stopLserver(self):
         self.OkLower.stop()
         self.redis.set(constants.lower_server, False)
 
-    def stopOpenH(self):
-        self.OkHigher.stopOpen()
+    def switchHOpen(self):
+        if self.conn.get(constants.higher_buy_run_key):
+            self.OkHigher.stopOpen()
+        else:
+            self.OkHigher.remainOpen()
 
-    def remainOpenH(self):
-        self.OkHigher.remainOpen()
+    def switchHLiquid(self):
+        if self.conn.get(constants.higher_sell_run_key):
+            self.OkHigher.stopLiquid()
+        else:
+            self.OkHigher.remainLiquid()
 
-    def stopOpenL(self):
-        self.OkLower.stopOpen()
+    def switchLOpen(self):
+        if self.conn.get(constants.lower_buy_run_key):
+            self.OkLower.stopOpen()
+        else:
+            self.OkLower.remainOpen()
 
-    def remainOpenL(self):
-        self.OkLower.remainOpen()
+    def switchLLiquid(self):
+        if self.conn.get(constants.lower_sell_run_key):
+            self.OkLower.stopLiquid()
+        else:
+            self.OkLower.remainLiquid()
+
+    def hsetting(self):
+        self.OkHigher.setting_check()
+
+    def lsetting(self):
+        self.OkLower.setting_check()
 
     def liquidH(self):
         self.OkHigher.liquidAll()
@@ -247,8 +291,8 @@ class TradeMexAndOk(object):
 
 
 t = TradeMexAndOk()
-t.initcfg()
 t.start()
+
 
 while t.upStatu():
     time.sleep(2)

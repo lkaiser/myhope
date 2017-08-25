@@ -13,7 +13,7 @@ from db.rediscon import Conn_db
 logger = logging.getLogger('root')  # 获取名为tst的logger
 
 class OkHigher(object):
-    def __init__(self,okcoin,mex,_mex,market,mexliquidation, contract_type='quarter', max_size=24, deal_amount=6,
+    def __init__(self,okcoin,mex,_mex,market, contract_type='quarter', max_size=24, deal_amount=6,
                  expected_profit=15, basis_create=40,higher_back_distant=15, step_price=1.5):
         self.mex = mex
         self.contract_type = contract_type
@@ -21,7 +21,6 @@ class OkHigher(object):
         self.okcoin.cancel_all(self.contract_type)
         self._mex = _mex
         self.market = market
-        self.mexliquidation = mexliquidation
         self.MAX_Size = max_size
         self.deal_amount = deal_amount
         self.expected_profit = expected_profit
@@ -30,10 +29,10 @@ class OkHigher(object):
         self.step_price = step_price
         self.init_basis_create = basis_create
         self.status = False
-        self.sellstatus = True  # 默认为true 否则 postion 进程有可能跑不起来
-        self.buystatus = True  # 默认为true 否则 postion 进程有可能跑不起来
-        self.finished = True  # 所有进程结束
-        self.event = threading.Event()
+        self.event = threading.Event()  #启停控制
+        self.openevent = threading.Event() #开仓暂停
+        self.liquidevent = threading.Event() #平仓暂停
+        self.waitevent = threading.Event() #等待 position
 
         self.conn = Conn_db()
         self.conn.set(constants.higher_max_size_key, self.MAX_Size)
@@ -53,7 +52,6 @@ class OkHigher(object):
 
         self.conn.set(constants.higher_buy_run_key, True)
         self.conn.set(constants.higher_sell_run_key, True)
-        self.conn.set(constants.higher_main_run_key, True)
 
         self.slipkey = constants.higher_split_position
         self.lastevenuprice = 0
@@ -73,116 +71,41 @@ class OkHigher(object):
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
 
+    def flush_status(self,amount_change):
+        if amount_change != 0:
+            self.ok_sell_balance += amount_change
+            self.basis_create += round(float(amount_change) / float(self.deal_amount) * float(self.step_price), 3)
+            self.conn.set(constants.higher_basic_create_key, self.basis_create)
+        if not self.waitevent.isSet():
+            logger.info("###########set higher free##########")
+            self.waitevent.set()
 
-    # 现有问题，一开始就查持仓，执行到后面的重新提交平仓或者开仓动作时，并非以最新实际持仓下的操作，导致重复提交平仓（分步平仓下会影响盈利）、开仓（超过最大限额开仓）
-    # 一开始就要取消所有平仓、开仓动作,线程sleep 0.5s,执行接下来在查持仓,这样保证在一个循环周期内持仓不变
-    def position_mon(self,manual):
-        init_holding = None
-        okposition = self.okcoin.get_position(self.contract_type)['holding']
-        last_time = 0
-        roundtimes = 0
-        if okposition:
-            init_holding = okposition[0]
-        while 1:
-            if not self.event.isSet():
-                if roundtimes > 0:
-                    roundtimes = 0
-                    self.event.set() #利用event特性，roundtimes> 0证明 wait之后，postion_mon至少跑完一轮,此时buy,sell进程皆可释放
-                else :
-                    roundtimes +=1
-
-            if not self.status and not self.sellstatus and not self.buystatus: #sell 和 buy 进程都跑完后 position再运行最后一次，退出
-                if last_time > 0:
-                    logger.info("###############################Higher position thread shutdown");
-                    self.finished = True
+    def update_split_position(self,amount_change):
+        if self.balancelock.acquire():
+            last_pos = 0
+            logger.info("###balancelock acqurie")
+            self.split_position.sort(key=lambda x: x[1])
+            left_amount = -amount_change
+            prices = self.conn.get(constants.ok_mex_price)
+            now_create = prices[4] - prices[1]  # 两种算法，1用当前差价  2 用split_position最新平仓差价
+            last_create = now_create
+            while (self.split_position and left_amount > 0):
+                last_pos = self.split_position.pop()
+                left_amount = left_amount - last_pos[0]
+                last_create = last_pos[1]
+                if (left_amount < 0):
+                    self.split_position.append((-left_amount, last_pos[1]))
                     break
-                else:
-                    last_time += 1
-            runmain = self.conn.get(constants.higher_main_run_key)
-            if not runmain:
-                logger.info("###############higher position suspend##################")
-                #time.sleep(2)
-                #continue
-            try:
-                new_holding = self.okcoin.get_position(self.contract_type)['holding'][0]
-                amount_change = new_holding['sell_amount'] - init_holding['sell_amount']
-                logger.info("ok_sell_balance="+bytes(self.ok_sell_balance)+"amount_change = "+bytes(amount_change))
-
-                self.ok_sell_balance += amount_change
-
-                # OKcoin挂单成交后，mex立刻以市价做出反向操作
-                if amount_change > 0: #status false之后不再开仓
-                    holdokprice = (new_holding['sell_price_avg'] * (new_holding['sell_amount']) - init_holding['sell_price_avg'] * (init_holding['sell_amount'])) / amount_change
-                    okprice = holdokprice
-                    if self.conn.get(constants.use_last_price):
-                        okprice = self.lastsellprice
-                    logger.info("###########holding caculated price=" + bytes(holdokprice) + " while last sell price= " + bytes(self.lastsellprice))
-                    sell_price = round(self.market.mex_bids_price + 5, 1)  # 以成交为第一目的
-                    logger.info(init_holding)
-                    logger.info(new_holding)
-                    logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(self.market.mex_bids_price))
-                    # logger.info("mex_bids_price = "+bytes(self.mex_bids_price)+" allow exced area= "+bytes(2))
-                    logger.info("################ammout 增加了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                    self.mexliquidation.suborder(okprice, sell_price, amount_change, self.expected_profit, self.basis_create, 'buy')
-                    self.basis_create += round(float(amount_change) / float(self.deal_amount) * float(self.step_price), 3)
-                    self.conn.set(constants.higher_basic_create_key, self.basis_create)
-
-                if amount_change < 0:  # 有仓位被平
-                    okprice = 0
-                    buy_price = round(self.market.mex_asks_price - 5, 1)
-                    # logger.info("avarage ok deal price" + bytes(okprice) + " while mex ask price =" + bytes(self.mex_asks_price))
-                    # logger.info("mex_asks_price = "+bytes(self.mex_asks_price) + " allow exced area= "+ bytes(2))
-                    # 按bais价格从高到低减,排序
-
-                    last_pos = None
-                    if self.balancelock.acquire():
-                        logger.info("###balancelock acqurie")
-                        self.split_position.sort(key=lambda x: x[1])
-                        left_amount = -amount_change
-
-                        okprice = self.lastevenuprice
-                        prices = self.conn.get(constants.ok_mex_price)
-                        now_create = prices[4] - prices[1]  #两种算法，1用当前差价  2 用split_position最新平仓差价
-                        last_create = now_create
-                        while(self.split_position and left_amount>0):
-                            last_pos = self.split_position.pop()
-                            left_amount = left_amount - last_pos[0]
-                            last_create = last_pos[1]
-                            if (left_amount < 0):
-                                self.split_position.append((-left_amount, last_pos[1]))
-                                break
-                        if left_amount > 0:
-                            print "操你大爷，都卖光了还要卖？"
-
-                        self.conn.set(self.slipkey, self.split_position)
-                        logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
-                        if (last_create - self.expected_profit + self.higher_back_distant) > now_create:#计算basic_create是否大于市场差价，大于，则说明平仓后再开仓需继续等待，小于则说明1 行情迅速反弹至下一建仓点以上，2被套，手动平仓，这2种情况都无需修改下一建仓点
-                            self.basis_create = round(last_create + self.higher_back_distant - self.expected_profit, 3)
-                            self.conn.set(constants.higher_basic_create_key, self.basis_create)
-                        self.balancelock.release()
-                        logger.info("#####balancelock release")
-
-                    self.mexliquidation.suborder(okprice, buy_price, amount_change, self.expected_profit, last_pos[1], 'sell')
-                if (self.amountsigal > 10000):
-                    self.amountsigal = 1
-                else:
-                    self.amountsigal += 1
-                init_holding = new_holding
-                # if amount_change>0:
-                #     #logger.info("################basic_create=" + bytes(self.basis_create) + " ammount_change="+bytes(amount_change)+" deal_amount="+bytes(self.deal_amount)+" step_price="+bytes(self.step_price)+" ##############")
-                #     self.basis_create += float(amount_change) / float(self.deal_amount) * float(self.step_price)
-                #     self.conn.set(constants.higher_basic_create_key, self.basis_create)
-                # if amount_change<0:
-                #     #logger.info("################basic_create=" + bytes(self.basis_create) + " ammount_change=" + bytes(amount_change) + " deal_amount=" + bytes(self.deal_amount) + " step_price=" + bytes(self.step_price) + " ##############")
-                #     self.basis_create += float(amount_change) / float(self.deal_amount) * float(self.step_price)*1.1  # okcoin每开成一多单,create 就上升 1.5/deal_amount,可以理解为价差在继续拉大,扩大下一次开单价差获取更大利差空间
-                #     self.conn.set(constants.higher_basic_create_key, self.basis_create)
-            except Exception, e:
-                time.sleep(1.25)
-                logger.info(e)
-                self.okcoin.cancel_all(self.contract_type)
-            time.sleep(0.5)
-            # end = datetime.datetime.now()
-            # logger.info("############position3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+            if left_amount > 0:
+                print "操你大爷，都卖光了还要卖？"
+            self.conn.set(self.slipkey, self.split_position)
+            logger.info("################ammout 减少了 " + bytes(amount_change) + "，持仓变化如下 #######################")
+            if (last_create - self.expected_profit + self.higher_back_distant) > now_create:  # 计算basic_create是否大于市场差价，大于，则说明平仓后再开仓需继续等待，小于则说明1 行情迅速反弹至下一建仓点以上，2被套，手动平仓，这2种情况都无需修改下一建仓点
+                self.basis_create = round(last_create + self.higher_back_distant - self.expected_profit, 3)
+                self.conn.set(constants.higher_basic_create_key, self.basis_create)
+            self.balancelock.release()
+            logger.info("#####balancelock release")
+            return last_pos
 
     def plusUpdate(self, okprice, mexprice, amount):
         if self.balancelock.acquire():  # 更新balance、split_position
@@ -203,31 +126,18 @@ class OkHigher(object):
     def submit_buy_order(self):
         order_id = []
         cycletimes = 0
-        laststatus = False
-        self.buystatus = True
         while 1:
             if not self.status:
-                self.buystatus = False
                 logger.info("###############################Higher 平仓 thread shutdown");
                 break
-            if not self.event.is_set():
+            if not self.event.isSet(): #停止信号
+                logger.info("###############################Higher 平仓 thread stopped");
                 self.event.wait()
-            run = self.conn.get(constants.higher_buy_run_key)
-            runmain = self.conn.get(constants.higher_main_run_key)
-            if not run or not runmain:
-                if laststatus:
-                    self.okcoin.cancel_all(self.contract_type) #挂起之后需要取消所有挂单
-                    laststatus = False
-                logger.info("###############buy supend##################")
-                time.sleep(1)
-                continue
-            laststatus = True
+            if not self.liquidevent.isSet():#平仓暂停
+                logger.info("###############################Higher 平仓 suspend");
+                self.liquidevent.wait()
             start = datetime.datetime.now()
             price = self.market.q_bids_price.get()
-            if not self.status:
-                self.buystatus = False
-                logger.info("###############################Higher 平仓 thread shutdown");
-                break
             end = datetime.datetime.now()
             logger.info("############buy order1 spend" + bytes(((end - start).microseconds) / 1000.0) + "milli seconds ")
             if order_id:
@@ -309,29 +219,18 @@ class OkHigher(object):
     def submit_sell_order(self):
         order_id = []
         cycletimes = 0
-        laststatus = True
-        self.sellstatus = True
         while 1:
             if not self.status:
-                self.sellstatus = False
                 logger.info("###############################Higher 开仓 thread shutdown");
                 break
-            #if self.amountsigal == 0:
-            #    time.sleep(3)
-            if not self.event.is_set():
+            if not self.event.isSet(): #停止信号
+                logger.info("###############################Higher 开仓 thread stopped");
                 self.event.wait()
-            run = self.conn.get(constants.higher_sell_run_key)
-            runmain = self.conn.get(constants.higher_main_run_key)
-            if not run or not runmain:
-                if laststatus:
-                    self.okcoin.cancel_all(self.contract_type)
-                    laststatus = False
-                logger.info("###############开仓 supend##################")
-                time.sleep(2)
-                continue
-            laststatus = True
+            if not self.liquidevent.isSet():#平仓暂停
+                logger.info("###############################Higher 开仓 suspend");
+                self.liquidevent.wait()
             start = datetime.datetime.now()
-
+            price = self.market.q_asks_price.get()
             end = datetime.datetime.now()
             logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ")
             if order_id:
@@ -367,7 +266,7 @@ class OkHigher(object):
                     cycletimes = 0
             order_id[:] = []
             end = datetime.datetime.now()
-            price = self.market.q_asks_price.get()
+
             if not self.status:
                 self.sellstatus = False
                 logger.info("###############################Higher 开仓 thread shutdown");
@@ -409,90 +308,85 @@ class OkHigher(object):
             logger.info("############sell order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
     def setting_check(self):
-        while 1:
-            if not self.status:
-                break
-            try:
-                time.sleep(1)
-                fastformh = self.conn.get("fastformh")
-                if fastformh:
-                    logger.info("############fast formh setting################")
-                    beforestatus = self.conn.get(constants.higher_main_run_key)
-                    self.conn.set(constants.higher_main_run_key, False)
-                    time.sleep(3)
-                    self.MAX_Size = fastformh['higher_max_size']
-                    self.deal_amount = fastformh['higher_deal_amount']
-                    self.expected_profit = fastformh['higher_expected_profit']
-                    self.basis_create = fastformh['higher_basis_create']
-                    self.higher_back_distant = fastformh['higher_back_distant']
-                    self.step_price = fastformh['higher_step_price']
+        try:
+            time.sleep(1)
+            fastformh = self.conn.get("fastformh")
+            if fastformh:
+                logger.info("############fast formh setting################")
+                beforestatus = self.event.isSet()  #
+                if beforestatus:
+                    self.event.clear()  # 没停的话，先暂停
+                self.MAX_Size = fastformh['higher_max_size']
+                self.deal_amount = fastformh['higher_deal_amount']
+                self.expected_profit = fastformh['higher_expected_profit']
+                self.basis_create = fastformh['higher_basis_create']
+                self.higher_back_distant = fastformh['higher_back_distant']
+                self.step_price = fastformh['higher_step_price']
 
-                    self.conn.set(constants.higher_max_size_key, self.MAX_Size)
-                    self.conn.set(constants.higher_deal_amount_key, self.deal_amount)
-                    self.conn.set(constants.higher_expected_profit_key, self.expected_profit)
-                    self.conn.set(constants.higher_back_distant_key, self.higher_back_distant)
-                    self.conn.set(constants.higher_basic_create_key, self.basis_create)
-                    self.conn.set(constants.higher_step_price_key, self.step_price)
+                self.conn.set(constants.higher_max_size_key, self.MAX_Size)
+                self.conn.set(constants.higher_deal_amount_key, self.deal_amount)
+                self.conn.set(constants.higher_expected_profit_key, self.expected_profit)
+                self.conn.set(constants.higher_back_distant_key, self.higher_back_distant)
+                self.conn.set(constants.higher_basic_create_key, self.basis_create)
+                self.conn.set(constants.higher_step_price_key, self.step_price)
+                self.conn.delete("fastformh")
+                if beforestatus:
+                    self.event.set()
 
-                    if beforestatus:
-                        self.conn.set(constants.higher_main_run_key, True)
-                    self.conn.delete("fastformh")
-            except:
-                pass
+        except:
+            pass
+
 
     def start(self,basis=None):
-        #self.server.test()
         if not self.status:
-            if self.finished:
-                logger.info("###############################Higher跑起来了，哈哈哈");
-                self.status = True
-                self.finished = False
-                self.conn.set(constants.higher_buy_run_key, True)
-                self.conn.set(constants.higher_sell_run_key, True)
-                self.conn.set(constants.higher_main_run_key, True)
+            logger.info("###############################Higher跑起来了，哈哈哈");
+            self.status = True
+            self.openevent.set()
+            self.liquidevent.set()
+            self.conn.set(constants.higher_buy_run_key, True)
+            self.conn.set(constants.higher_sell_run_key, True)
 
-                if basis:
-                    self.conn.set(constants.higher_basic_create_key, basis)
-                    self.basis_create = basis
+            if basis:
+                self.conn.set(constants.higher_basic_create_key, basis)
+                self.basis_create = basis
 
-                pm = threading.Thread(target=self.position_mon,args=(False,))
-                pm.setDaemon(True)
-                pm.start()
+            sell = threading.Thread(target=self.submit_sell_order)
+            sell.setDaemon(True)
+            sell.start()
 
-                sell = threading.Thread(target=self.submit_sell_order)
-                sell.setDaemon(True)
-                sell.start()
+            buy = threading.Thread(target=self.submit_buy_order)
+            buy.setDaemon(True)
+            buy.start()
 
-                buy = threading.Thread(target=self.submit_buy_order)
-                buy.setDaemon(True)
-                buy.start()
-
-                check = threading.Thread(target=self.setting_check)
-                check.setDaemon(True)
-                check.start()
-                return True
-            else:
-                logger.info("###############################wo cao,higher上次还没有退出来，没法启动");
-                return False
-        else:
-            return True
+            # check = threading.Thread(target=self.setting_check)
+            # check.setDaemon(True)
+            # check.start()
+        self.event.set()  # 开启
 
     def stop(self):
-        if self.status:
-            logger.info("###############################Higher shutdown");
-            self.status = False
-            #time.sleep(0.5)
-            #self.conn.set(constants.higher_buy_run_key, False)
-            #self.conn.set(constants.higher_sell_run_key, False)
-            #self.conn.set(constants.higher_main_run_key, False)
-            self.okcoin.cancel_all(self.contract_type)
+        self.event.clear()
+        logger.info("###############################Higher stopped");
 
     def stopOpen(self):
+        self.openevent.clear()
+        run = self.conn.get(constants.higher_buy_run_key)
+        if run:
+            self.conn.set(constants.higher_buy_run_key,False)
+
+    def remainOpen(self):
+        self.openevent.set()
+        run = self.conn.get(constants.higher_buy_run_key)
+        if not run:
+            self.conn.set(constants.higher_buy_run_key,True)
+
+    def stopLiquid(self):
+        self.liquidevent.clear()
         run = self.conn.get(constants.higher_sell_run_key)
         if run:
             self.conn.set(constants.higher_sell_run_key,False)
 
-    def remainOpen(self):
+    def remainLiquid(self):
+        self.liquidevent.set()
         run = self.conn.get(constants.higher_sell_run_key)
         if not run:
             self.conn.set(constants.higher_sell_run_key,True)
@@ -503,7 +397,4 @@ class OkHigher(object):
             for x in self.split_position:
                 amount += x[0]
             self.okcoin.tradeRival(constants.higher_contract_type, amount, 4)
-
-    def finished(self):
-        return self.finished
 

@@ -73,6 +73,8 @@ higher_mex_contract_type = config.get("all", "higher_mex_contract_type")
 
 use_last_price = "use_last_price"
 
+http_server = "http://127.0.0.1:8000"
+
 strategy_on_key = "strategy_on"
 strategy_higher_key = "strategy_higher"
 strategy_lower_key = "strategy_lower"

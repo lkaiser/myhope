@@ -12,6 +12,7 @@ from form.settingForm import settingForm
 from form.fastHigherForm import fastHigherForm
 from form.fastLowerForm import fastLowerForm
 import flask
+import requests
 
 from flask_login import (LoginManager, login_required, login_user,
                              logout_user, UserMixin)
@@ -210,7 +211,7 @@ def fastlsetting():
           "lower_back_distant": form.lower_back_distant.data, "lower_basis_create": form.lower_basis_create.data,
           "lower_step_price": form.lower_step_price.data}
     redis.set("fastforml",fm)
-    time.sleep(2)
+    requests.get(constants.http_server + "/lsetting/")
     return flask.redirect(flask.url_for('admin'))
 
 @app.route('/fasthsetting' , methods=['POST'])
@@ -220,7 +221,7 @@ def fasthsetting():
     constants.updateh(form)
     fm = {"higher_max_size":form.higher_max_size.data,"higher_deal_amount":form.higher_deal_amount.data,"higher_expected_profit":form.higher_expected_profit.data,"higher_back_distant":form.higher_back_distant.data,"higher_basis_create":form.higher_basis_create.data,"higher_step_price":form.higher_step_price.data}
     redis.set("fastformh", fm)
-    time.sleep(2)
+    requests.get(constants.http_server + "/hsetting/")
     return flask.redirect(flask.url_for('admin'))
 
 @app.route('/setting' , methods=['GET', 'POST'])
@@ -290,43 +291,39 @@ def threadctl(thread):
         else:
             os.system('nohup python core/ok_mex.py &')
 
-    if "main" == thread:
-        key = redis.get(constants.lower_main_run_key)
-        redis.set(constants.lower_main_run_key,not key)
     if "buy" == thread:
         key = redis.get(constants.lower_buy_run_key)
-        redis.set(constants.lower_buy_run_key,not key)
+        requests.get(constants.http_server + "/lopen/")
     if "sell" == thread:
         key = redis.get(constants.lower_sell_run_key)
-        redis.set(constants.lower_sell_run_key,not key)
+        requests.get(constants.http_server + "/lliquid/")
 
-    if "main2" == thread:
-        key = redis.get(constants.higher_main_run_key)
-        redis.set(constants.higher_main_run_key,not key)
     if "buy2" == thread:
         key = redis.get(constants.higher_buy_run_key)
-        redis.set(constants.higher_buy_run_key,not key)
+        requests.get(constants.http_server + "/hopen/")
     if "sell2" == thread:
         key = redis.get(constants.higher_sell_run_key)
-        redis.set(constants.higher_sell_run_key,not key)
+        requests.get(constants.http_server + "/hliquid/")
 
     if "server" == thread:
         key = redis.get(constants.lower_server)
-        if not key:
-            redis.set(constants.command_h_server, key)#开lserver 一定要关 hserver
-        redis.set(constants.command_l_server, not key)
+        # if not key:
+        #     redis.set(constants.command_h_server, key)#开lserver 一定要关 hserver
+        # redis.set(constants.command_l_server, not key)
+        requests.get(constants.http_server+"/lserver/")
+
 
     if "server2" == thread:
         key = redis.get(constants.higher_server)
-        if not key:
-            redis.set(constants.command_l_server, key) #开hserver 一定要关 lserver
-        redis.set(constants.command_h_server, not key)
+        # if not key:
+        #     redis.set(constants.command_l_server, key) #开hserver 一定要关 lserver
+        # redis.set(constants.command_h_server, not key)
+        requests.get(constants.http_server + "/hserver/")
 
     if "strategy" == thread:
         key = redis.get(constants.strategy_on_key)
         redis.set(constants.strategy_on_key,not key)
 
-    time.sleep(2)
     return str(not key)
 
 @app.route('/strategy' , methods=['GET', 'POST'])
@@ -344,6 +341,16 @@ def strategy():
     strategyh = redis.get(constants.strategy_higher_key)
     strategyl = redis.get(constants.strategy_lower_key)
     return render_template('strategy.html', strategyon = str(strategyon),strategyh = strategyh,strategyl = strategyl)
+
+@app.route('/recentall/')
+def recentall():
+    oklist = redis.get('recent')
+    size = len(oklist) - 1
+    rs = []
+    for i in range(0, size, 1):
+        el = (oklist[i][0]+datetime.timedelta(hours=8), oklist[i][1],oklist[i][2])
+        rs.append(el)
+    return json.dumps(rs, cls=CJsonEncoder)
 
 @app.route('/recent10m/')
 def recent10min():
