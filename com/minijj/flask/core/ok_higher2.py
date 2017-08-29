@@ -223,9 +223,9 @@ class OkHigher(object):
             if not self.event.isSet(): #停止信号
                 logger.info("###############################Higher 开仓 thread stopped");
                 self.event.wait()
-            if not self.liquidevent.isSet():#平仓暂停
+            if not self.openevent.isSet():#开仓暂停
                 logger.info("###############################Higher 开仓 suspend");
-                self.liquidevent.wait()
+                self.openevent.wait()
             start = datetime.datetime.now()
             price = self.market.q_asks_price.get()
             end = datetime.datetime.now()
@@ -330,6 +330,11 @@ class OkHigher(object):
                 if beforestatus:
                     self.event.set()
 
+                logger.info("###########now event status="+str(self.event.isSet()))
+                logger.info("###########now openevent status=" + str(self.openevent.isSet()))
+                logger.info("###########now liquidevent status=" + str(self.liquidevent.isSet()))
+                logger.info("###########now waitevent status=" + str(self.waitevent.isSet()))
+
         except:
             pass
 
@@ -378,6 +383,7 @@ class OkHigher(object):
 
     def stopLiquid(self):
         self.liquidevent.clear()
+        logger.info("###########now liquidevent status=" + str(self.event.isSet()))
         run = self.conn.get(constants.higher_sell_run_key)
         if run:
             self.conn.set(constants.higher_sell_run_key,False)
