@@ -198,25 +198,25 @@ class TradeMexAndOk(object):
         self.redis.set(constants.lower_server, False)
 
     def switchHOpen(self):
-        if self.conn.get(constants.higher_buy_run_key):
+        if self.redis.get(constants.higher_buy_run_key):
             self.OkHigher.stopOpen()
         else:
             self.OkHigher.remainOpen()
 
     def switchHLiquid(self):
-        if self.conn.get(constants.higher_sell_run_key):
+        if self.redis.get(constants.higher_sell_run_key):
             self.OkHigher.stopLiquid()
         else:
             self.OkHigher.remainLiquid()
 
     def switchLOpen(self):
-        if self.conn.get(constants.lower_buy_run_key):
+        if self.redis.get(constants.lower_buy_run_key):
             self.OkLower.stopOpen()
         else:
             self.OkLower.remainOpen()
 
     def switchLLiquid(self):
-        if self.conn.get(constants.lower_sell_run_key):
+        if self.redis.get(constants.lower_sell_run_key):
             self.OkLower.stopLiquid()
         else:
             self.OkLower.remainLiquid()
@@ -255,11 +255,11 @@ class TradeMexAndOk(object):
         self.async_raise(thread.ident, SystemExit)
 
     def cal_order(self, okposition, mexposition):
-        sposition = self.conn.get(self.slipkey)
+        sposition = self.redis.get(self.slipkey)
         if not sposition:
             sposition = []
         if not okposition or not okposition['sell_amount']:
-            self.conn.set(self.slipkey, [])
+            self.redis.set(self.slipkey, [])
         else:
             if (mexposition[1] != okposition['sell_amount'] * 100):
                 logger.info("两端仓位不平，对冲个屁啊，赶紧改！")
@@ -275,7 +275,7 @@ class TradeMexAndOk(object):
                 b = okposition['sell_amount'] - cnt
                 bais = round(a / b, 3)
                 self.split_position.append(((okposition['sell_amount'] - cnt), bais))
-                self.conn.set(self.slipkey, self.split_position)
+                self.redis.set(self.slipkey, self.split_position)
             if (cnt > okposition['sell_amount']):
                 left_amount = cnt - okposition['sell_amount']
                 while (self.split_position and left_amount > 0):
@@ -284,10 +284,7 @@ class TradeMexAndOk(object):
                     if (left_amount < 0):
                         self.split_position.append((-left_amount, last_pos[1]))
                         break
-                self.conn.set(self.slipkey, self.split_position)
-
-    def cancel_all(self):
-        self.okcoin.cancel_all(self.contract_type)
+                self.redis.set(self.slipkey, self.split_position)
 
 
 t = TradeMexAndOk()

@@ -110,8 +110,8 @@ def admin():
     server = redis.get(constants.lower_server)
 
     main2 = redis.get(constants.higher_main_run_key)
-    buy2 = redis.get(constants.higher_buy_run_key)
-    sell2 = redis.get(constants.higher_sell_run_key)
+    buy2 = redis.get(constants.higher_sell_run_key)
+    sell2 = redis.get(constants.higher_buy_run_key)
     server2 = redis.get(constants.higher_server)
 
 
@@ -299,11 +299,11 @@ def threadctl(thread):
         requests.get(constants.http_server + "/lliquid/")
 
     if "buy2" == thread:
-        key = redis.get(constants.higher_buy_run_key)
-        requests.get(constants.http_server + "/hopen/")
-    if "sell2" == thread:
         key = redis.get(constants.higher_sell_run_key)
         requests.get(constants.http_server + "/hliquid/")
+    if "sell2" == thread:
+        key = redis.get(constants.higher_buy_run_key)
+        requests.get(constants.http_server + "/hopen/")
 
     if "server" == thread:
         key = redis.get(constants.lower_server)

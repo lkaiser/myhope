@@ -160,9 +160,8 @@ class OkLower(object):
                         else:
                             cycletimes = 0
                             if cancel_result['error_code'] == 20015:
-                                self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
-                                while self.amountsigal < 2:
-                                    time.sleep(2)
+                                self.waitevent.clear()  # 发现有成交，强行等待 holdposition更新，否则会有holdpostion长时间不运行概率
+                                self.waitevent.wait()
                     else:
                         cycletimes = 0
 

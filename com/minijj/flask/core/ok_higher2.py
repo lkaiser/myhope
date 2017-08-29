@@ -172,11 +172,8 @@ class OkHigher(object):
                         else:
                             cycletimes = 0
                             if cancel_result['error_code'] == 20015:
-                                #self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认 持仓变化已获取
-                                #while self.amountsigal < 2:
-                                #    time.sleep(2)
-                                self.event.clear() #默认不需要阻塞的，event应该为true,当需要阻塞时，event设为 false 并wait
-                                self.event.wait()
+                                self.waitevent.clear()  # 发现有成交，强行等待 holdposition更新，否则会有holdpostion长时间不运行概率
+                                self.waitevent.wait()
                     else:
                         cycletimes = 0
             order_id[:] = []
@@ -235,9 +232,9 @@ class OkHigher(object):
             if not self.event.isSet(): #停止信号
                 logger.info("###############################Higher 开仓 thread stopped");
                 self.event.wait()
-            if not self.liquidevent.isSet():#平仓暂停
+            if not self.openevent.isSet():#开仓暂停
                 logger.info("###############################Higher 开仓 suspend");
-                self.liquidevent.wait()
+                self.openevent.wait()
             start = datetime.datetime.now()
             price = self.market.q_asks_price.get()
             end = datetime.datetime.now()
@@ -313,11 +310,11 @@ class OkHigher(object):
                             logger.info("##############terrible sycle on cancel sell order##########")
                         continue  # 取消状态只有2种，取消成功或者20015交易成功无法取消,其它状态都跳回重新取消
                     else:
-                        self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认basis_create已经更新
+                        #self.amountsigal = 0  # 设置amount更新信号，从0开始计数，更新2次以上后确认basis_create已经更新
                         #while self.amountsigal < 2:
                         #    time.sleep(3)
-                        self.event.clear()  # 默认不需要阻塞的，event应该为true,当需要阻塞时，event设为 false 并wait
-                        self.event.wait()
+                        self.waitevent.clear()  # 发现有成交，强行等待 holdposition更新，否则会有holdpostion长时间不运行概率
+                        self.waitevent.wait()
                         cycletimes = 0
                 else:
                     cycletimes = 0
@@ -387,6 +384,11 @@ class OkHigher(object):
                 if beforestatus:
                     self.event.set()
 
+                logger.info("###########now event status="+str(self.event.isSet()))
+                logger.info("###########now openevent status=" + str(self.openevent.isSet()))
+                logger.info("###########now liquidevent status=" + str(self.liquidevent.isSet()))
+                logger.info("###########now waitevent status=" + str(self.waitevent.isSet()))
+
         except:
             pass
 
@@ -435,6 +437,7 @@ class OkHigher(object):
 
     def stopLiquid(self):
         self.liquidevent.clear()
+        logger.info("###########now liquidevent status=" + str(self.event.isSet()))
         run = self.conn.get(constants.higher_sell_run_key)
         if run:
             self.conn.set(constants.higher_sell_run_key,False)
