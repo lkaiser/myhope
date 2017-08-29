@@ -116,7 +116,7 @@ class OkCoinComApi(object):
         p = dict()
         p['api_key'] = self.api_key
         p['symbol'] = 'btc_usd'
-        p['contract_type'] = 'quarter'
+        p['contract_type'] = contract_type
         p['status'] = '1'
         p['order_id'] = '-1'
         p['current_page'] = '1'

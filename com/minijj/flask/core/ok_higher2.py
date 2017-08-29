@@ -34,6 +34,11 @@ class OkHigher(object):
         self.liquidevent = threading.Event() #平仓暂停
         self.waitevent = threading.Event() #等待 position
 
+        self.openorders = []
+        self.openstatus = False
+        self.liquidorders = []
+        self.liquidstatus = False
+
         self.conn = Conn_db()
         self.conn.set(constants.higher_max_size_key, self.MAX_Size)
         self.conn.set(constants.higher_deal_amount_key, self.deal_amount)
@@ -70,6 +75,9 @@ class OkHigher(object):
 
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
+
+    def refresh_orders(self,change_amount):
+        pass
 
     def flush_status(self,amount_change):
         if amount_change != 0:
@@ -122,6 +130,7 @@ class OkHigher(object):
                 logger.info("################mex ammout 减少了" + bytes(amount) + "，持仓变化如下 #######################")
             self.balancelock.release()
             logger.info("#####balancelock rlease")
+
 
     def submit_buy_order(self):
         order_id = []
@@ -233,6 +242,54 @@ class OkHigher(object):
             price = self.market.q_asks_price.get()
             end = datetime.datetime.now()
             logger.info("############sell order1 spend " + bytes(((end - start).microseconds) / 1000.0) + " milli seconds ")
+            reopen_orders = []
+            #TODO 加锁
+            if self.openorders:
+                for order in self.openorders:
+                    if -0.1< (round(price, 2) + self.basis_create) - order[1] <order[2]:  #向上波动价格小于1.5 且没有成交情况下，无需重新下单
+                        pass
+                    else:
+                        reopen_orders.append(order)
+            if reopen_orders:
+                ids = []
+                for i in reopen_orders:
+                    ids.append(i[0]['order_id'])
+                # TODO 时间间隔
+                cancel_result = self.okcoin.cancel_orders(self.contract_type, ids)#一次最多3笔
+                logger.info(cancel_result)
+            # TODO 加锁
+            for order in reopen_orders:
+                self.openorders.remove(order)
+
+            if reopen_orders or self.openstatus:
+                try:
+
+                    if self.ok_sell_balance < self.MAX_Size:
+                        if self.MAX_Size - self.ok_sell_balance >= self.deal_amount:
+                            amount = self.deal_amount
+                        else:
+                            amount = abs(self.MAX_Size - self.ok_sell_balance)
+                        if self.sublock.acquire():
+                            self.lastsub = datetime.datetime.now()
+                            logger.info("###sublock acuire")
+                            self.sublock.release()
+                            logger.info("#####sublock release")
+                            self.lastsellprice = price
+                            logger.info("下单，下单，买买买 amount= " + bytes(amount) + "mex price = " + bytes(price - self.basis_create) + " coin price= " + bytes(price) + " basis_create= " + bytes(self.basis_create))
+                            trade_back = self.okcoin.trade(self.contract_type, price, amount, 2)
+                            oid = trade_back['order_id']
+                            order_id.append([amount, str(oid), datetime.datetime.now()])
+
+                except Exception, e:
+                    logger.info(trade_back)
+                    logger.info("买买买oid error")
+
+                    # self.okcoin.cancel_all(self.contract_type)
+                finally:
+                    pass
+                end = datetime.datetime.now()
+                logger.info("############sell order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
+
             if order_id:
                 if self.sublock.acquire():
                     logger.info("###sublock acuire")
@@ -267,10 +324,7 @@ class OkHigher(object):
             order_id[:] = []
             end = datetime.datetime.now()
 
-            if not self.status:
-                self.sellstatus = False
-                logger.info("###############################Higher 开仓 thread shutdown");
-                break
+
             logger.info("############sell order2 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds while q_ask_price = "+ bytes(price))
             price = round(price, 2) + self.basis_create  # mex 卖最新价 + 初始设定差价 放空单,失败就取消循环放,假设价格倒挂，create为负
 
