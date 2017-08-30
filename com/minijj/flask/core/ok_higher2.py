@@ -267,17 +267,34 @@ class OkHigher(object):
                     cancel_result = self.okcoin.cancel_orders(self.contract_type, ids)#一次最多3笔
                     logger.info(cancel_result)
                     self.update_open_orders_status()
+
                 subedorders = [0, 0, 0]
-                tosuborders = [0,0,0]
+                tosuborders = [0, 0, 0]
+                if self.openstatus:
+                    for order in self.openorders.values():
+                        if order[0]['status'] != 2 and order[0]['status'] != -1:  # 排除全部成交、已撤单成功的，其它全都视为已提交等待成交订单
+                            subedorders[order[3]] += order[0]['amount'] - order[0]['deal_amount']
+                    couldsub = self.MAX_Size - self.ok_sell_balance - sum(subedorders)
+                    if couldsub < self.deal_amount:
+                        if subedorders[1]+subedorders[2] > 0:
+                            #TODO 取消 2,3级
+
+
+                subedorders = [0, 0, 0]
+                tosuborders = [0, 0, 0]
                 for order in self.openorders.values():
                     if order[0]['status'] != 2 and order[0]['status'] != -1:#排除全部成交、已撤单成功的，其它全都视为已提交等待成交订单
                         subedorders[order[3]] += order[0]['amount'] - order[0]['deal_amount']
                 couldsub = self.MAX_Size - self.ok_sell_balance - sum(subedorders)
-                if not subedorders[0]:#一级为零
+                if not subedorders[0] and couldsub > 0:#一级为零
                     tosuborders[0] = self.deal_amount if couldsub > self.deal_amount else couldsub
                     couldsub -= tosuborders[0]
-                if couldsub > self.deal_amount*3:
-                    subedorders[1]+subedorders[2]
+                if not subedorders[1] and couldsub > 0:
+                    tosuborders[1] = self.deal_amount if couldsub > self.deal_amount else couldsub
+                    couldsub -= tosuborders[1]
+                if not subedorders[2] and couldsub > 0:
+                    tosuborders[2] = self.deal_amount if couldsub > self.deal_amount else couldsub
+                    couldsub -= tosuborders[2]
 
 
 

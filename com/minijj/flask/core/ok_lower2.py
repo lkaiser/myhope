@@ -322,6 +322,11 @@ class OkLower(object):
                     if beforestatus:
                         self.event.set()
 
+                    logger.info("###########now event status=" + str(self.event.isSet()))
+                    logger.info("###########now openevent status=" + str(self.openevent.isSet()))
+                    logger.info("###########now liquidevent status=" + str(self.liquidevent.isSet()))
+                    logger.info("###########now waitevent status=" + str(self.waitevent.isSet()))
+
             except:
                 pass
 
@@ -347,9 +352,6 @@ class OkLower(object):
             buy.setDaemon(True)
             buy.start()
 
-            check = threading.Thread(target=self.setting_check)
-            check.setDaemon(True)
-            check.start()
         self.event.set() #开启
 
     def stop(self):

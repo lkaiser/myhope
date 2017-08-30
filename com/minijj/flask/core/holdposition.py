@@ -66,7 +66,7 @@ class HoldPostion(object):
                     okprice = 0
                     buy_price = round(self.market.mex_asks_price + 5, 1)
                     # 按bais价格从高到低减,排序
-                    last_pos = self.hserver.update_split_position(h_amount_change)
+                    last_pos = self.lserver.update_split_position(l_amount_change)
                     self.mexliquidation.suborder(okprice, buy_price, l_amount_change, self.lserver.expected_profit, last_pos[1], 'buy')
 
                 self.hserver.flush_status(h_amount_change)
