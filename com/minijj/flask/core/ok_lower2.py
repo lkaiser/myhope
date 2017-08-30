@@ -294,11 +294,7 @@ class OkLower(object):
             logger.info("############sell order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
     def setting_check(self):
-        while 1:
-            if not self.status:
-                break
             try:
-                time.sleep(1)
                 fastformh = self.conn.get("fastforml")
                 if fastformh:
                     logger.info("############fast forml setting################")
@@ -321,7 +317,6 @@ class OkLower(object):
                     self.conn.delete("fastforml")
                     if beforestatus:
                         self.event.set()
-
             except:
                 pass
 
@@ -347,9 +342,6 @@ class OkLower(object):
             buy.setDaemon(True)
             buy.start()
 
-            check = threading.Thread(target=self.setting_check)
-            check.setDaemon(True)
-            check.start()
         self.event.set() #开启
 
     def stop(self):
