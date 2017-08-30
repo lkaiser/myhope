@@ -294,11 +294,7 @@ class OkLower(object):
             logger.info("############sell order3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
     def setting_check(self):
-        while 1:
-            if not self.status:
-                break
             try:
-                time.sleep(1)
                 fastformh = self.conn.get("fastforml")
                 if fastformh:
                     logger.info("############fast forml setting################")

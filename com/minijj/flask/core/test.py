@@ -146,6 +146,12 @@ if __name__ == '__main__':
    m.update(str)
    print m.hexdigest()
 
+   t = [0,0,0]
+   t[0] = 5
+   t[2] = 1
+   print t
+   print sum(t)
+
    #print constants.const.PI
 
    #logger.info("################ammout 增加了 " + bytes(0) + "，持仓变化如下 #######################")

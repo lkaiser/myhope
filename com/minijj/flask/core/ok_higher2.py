@@ -408,7 +408,6 @@ class OkHigher(object):
 
     def setting_check(self):
         try:
-            time.sleep(1)
             fastformh = self.conn.get("fastformh")
             if fastformh:
                 logger.info("############fast formh setting################")
