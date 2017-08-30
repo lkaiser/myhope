@@ -69,7 +69,7 @@ class OkLower(object):
 
     def flush_status(self,amount_change):
         if amount_change != 0:
-            self.ok_buy_balance += amount_change
+            self.ok_sell_balance += amount_change
             self.basis_create -= round(float(amount_change) / float(self.deal_amount) * float(self.step_price), 3)
             self.conn.set(constants.lower_basic_create_key, self.basis_create)
         if not self.waitevent.isSet():
