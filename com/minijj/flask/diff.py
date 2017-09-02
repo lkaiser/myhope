@@ -69,10 +69,12 @@ class Diff(object):
 
     def init_mex_ws(self):
         try:
+            print "are you inited"
             self.ws_mex.close()
             self.ws_mex.connect("wss://www.bitmex.com/realtime")
             self.ws_mex.send('{"op": "subscribe", "args": ["orderBook10:XBTU17"]}')
             self.ws_mex.settimeout = 6
+            print "yes"
         except Exception, e:
             self.init_mex_ws()
 

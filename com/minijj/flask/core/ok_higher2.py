@@ -86,11 +86,14 @@ class OkHigher(object):
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
 
+
     def record_deal_status(self,amount_change):
         if amount_change >0 :
             for order in self.openorders.values():
                 if not self.open_his.has_key(order[0]['order_id']):
                     self.open_his[order[0]['order_id']] = order[0]['deal_amount']
+                    if order[0]['deal_amount'] != 0:
+                        self.open_dealhis.append(([order[0]['deal_amount'], order[0]['price_avg']]))
                 else:
                     if self.open_his[order[0]['order_id']] != order[0]['deal_amount']:
                         self.open_dealhis.append(([order[0]['deal_amount']-self.open_his[order[0]['order_id']],order[0]['price_avg']]))
@@ -100,6 +103,8 @@ class OkHigher(object):
             for order in self.liquidorders.values():
                 if not self.liquid_his.has_key(order[0]['order_id']):
                     self.liquid_his[order[0]['order_id']] = order[0]['deal_amount']
+                    if order[0]['deal_amount'] != 0:
+                        self.liquid_dealhis.append(([order[0]['deal_amount'], order[0]['price_avg']]))
                 else:
                     if self.liquid_his[order[0]['order_id']] != order[0]['deal_amount']:
                         self.liquid_dealhis.append(([order[0]['deal_amount'] - self.liquid_his[order[0]['order_id']], order[0]['price_avg']]))
@@ -409,8 +414,9 @@ class OkHigher(object):
                             logger.info("#####sublock released")
                         cancel_result = self.okcoin.cancel_all_orders(self.contract_type, ids)#一次最多3笔
                         logger.info(cancel_result)
-                        self.update_open_orders_status(1)
 
+                        if couldsub < self.deal_amount*2
+                        self.update_orders_status(1)
                         for order in self.openorders.values(): #取消后需重新刷新 subedorders 及 couldsub
                             if order[0]['status'] != 2 and order[0]['status'] != -1:  # 排除全部成交、已撤单成功的，其它全都视为已提交等待成交订单
                                 subedorders[order[2]] += order[0]['amount'] - order[0]['deal_amount']
@@ -444,8 +450,7 @@ class OkHigher(object):
                 logger.info(trade_back)
                 logger.info(e)
                 logger.info("买买买oid error")
-
-                    # self.okcoin.cancel_all(self.contract_type)
+                self.okcoin.cancel_all(self.contract_type)
             finally:
                 pass
                 end = datetime.datetime.now()
