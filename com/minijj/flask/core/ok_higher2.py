@@ -415,7 +415,7 @@ class OkHigher(object):
                         cancel_result = self.okcoin.cancel_all_orders(self.contract_type, ids)#一次最多3笔
                         logger.info(cancel_result)
 
-                        if couldsub < self.deal_amount*2
+                        #if couldsub < self.deal_amount*2
                         self.update_orders_status(1)
                         for order in self.openorders.values(): #取消后需重新刷新 subedorders 及 couldsub
                             if order[0]['status'] != 2 and order[0]['status'] != -1:  # 排除全部成交、已撤单成功的，其它全都视为已提交等待成交订单
