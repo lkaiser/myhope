@@ -52,7 +52,8 @@ class HoldPostion(object):
                     buy_price = round(self.market.mex_asks_price - 5, 1)
                     # 按bais价格从高到低减,排序
                     last_pos = self.hserver.update_split_position(h_amount_change)
-                    self.mexliquidation.suborder(okprice, buy_price, h_amount_change, self.hserver.expected_profit, last_pos[1], 'sell')
+                    if last_pos:
+                        self.mexliquidation.suborder(okprice, buy_price, h_amount_change, self.hserver.expected_profit, last_pos[1], 'sell')
 
                 if l_amount_change > 0:
                     holdokprice = (new_holding['buy_price_avg'] * new_holding['buy_amount'] - init_holding['buy_price_avg'] * init_holding['buy_amount']) / l_amount_change
@@ -67,7 +68,8 @@ class HoldPostion(object):
                     buy_price = round(self.market.mex_asks_price + 5, 1)
                     # 按bais价格从高到低减,排序
                     last_pos = self.lserver.update_split_position(l_amount_change)
-                    self.mexliquidation.suborder(okprice, buy_price, l_amount_change, self.lserver.expected_profit, last_pos[1], 'buy')
+                    if last_pos:
+                        self.mexliquidation.suborder(okprice, buy_price, l_amount_change, self.lserver.expected_profit, last_pos[1], 'buy')
 
                 self.hserver.flush_status(h_amount_change)
                 self.lserver.flush_status(l_amount_change)
