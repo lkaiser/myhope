@@ -188,7 +188,7 @@ class OkHigher(object):
             if self.openlock.acquire():
                 ids = []
                 for order in self.openorders.values():
-                    ids.append(order[0]['order_id'])
+                    ids.append(str(order[0]['order_id']))
                 neworders = self.okcoin.get_order_info(self.contract_type, ids)
                 for order in neworders:
                     self.openorders[order['order_id']][0] = order
@@ -197,7 +197,7 @@ class OkHigher(object):
             if self.liquidlock.acquire():
                 ids = []
                 for order in self.liquidorders.values():
-                    ids.append(order[0]['order_id'])
+                    ids.append(str(order[0]['order_id']))
                 neworders = self.okcoin.get_order_info(self.contract_type, ids)
                 for order in neworders:
                     self.liquidorders[['order_id']][0] = order
@@ -223,7 +223,7 @@ class OkHigher(object):
         rightorders = []
         for order in orders:
             if order != -1:
-                rightorders.append(order)
+                rightorders.append(str(order))
         neworders = self.okcoin.get_order_info(self.contract_type, rightorders)
         if self.openlock.acquire():
             for order in neworders:
@@ -236,7 +236,7 @@ class OkHigher(object):
         rightorders = []
         for order in orders:
             if order != -1:
-                rightorders.append(order)
+                rightorders.append(str(order))
         neworders = self.okcoin.get_order_info(self.contract_type, rightorders)
         if self.liquidlock.acquire():
             for order in neworders:
@@ -341,11 +341,13 @@ class OkHigher(object):
                             levels = []
                             for x in [0,1,2]:
                                 #if tosuborders[x]:
-                                tradlist.append([tosuborders[x],round(price - 5*x,2)])
+                                tradlist.append([round(price - 5*x,2),tosuborders[x]])
                                 levels.append([x,round(price - 5*x,2),1.5*x+1.5])
                             # 提交订单
-                                logger.info("下单，下单，平平平 amount= " + ';'.join(tradlist) + "mex price = " + bytes(price + self.expected_profit - highest[1]) + " coin price = " + bytes(price) + " baiss= " + bytes(highest[1]))
+                                logger.info(tradlist)
+                                logger.info("下单，下单，平平平 amount= " + str(tradlist) + "mex price = " + bytes(price + self.expected_profit - highest[1]) + " coin price = " + bytes(price) + " baiss= " + bytes(highest[1]))
                                 trade_back = self.okcoin.batch_trade(self.contract_type,tradlist, 4)
+                                logger.info(trade_back)
                                 self.add_new_liquid_orders(trade_back,levels)
                     if self.liquidstatus:
                         self.liquidstatus = False
@@ -437,11 +439,13 @@ class OkHigher(object):
                         tradlist = []
                         levels = []
                         for x in [0,1,2]:
-                            tradlist.append([tosuborders[x],round(price + self.expected_profit*x*0.5,2)])
+                            tradlist.append([round(price + self.expected_profit*x*0.5,2),tosuborders[x]])
                             levels.append([x,round(price + self.expected_profit*x*0.5,2),3*x+1.5])
                         # 提交订单
-                            logger.info("下单，下单，买买买 amount= " + ';'.join(tradlist) + "mex price = " + bytes(price - self.basis_create) + " coin price= " + bytes(price) + " basis_create= " + bytes(self.basis_create))
+                            logger.info(tradlist)
+                            logger.info("下单，下单，买买买 amount= " + str(tradlist) + "mex price = " + bytes(price - self.basis_create) + " coin price= " + bytes(price) + " basis_create= " + bytes(self.basis_create))
                             trade_back = self.okcoin.batch_trade(self.contract_type,tradlist, 2)
+                            logger.info(trade_back)
                             self.add_new_open_orders(trade_back,levels)
                 if self.openstatus:
                     self.openstatus = False

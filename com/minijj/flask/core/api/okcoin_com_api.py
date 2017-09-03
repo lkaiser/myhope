@@ -2,8 +2,9 @@
 import requests
 import hashlib
 from retrying import retry
+import logging.handlers
 
-
+logger = logging.getLogger('root')
 class OkCoinComApi(object):
     def __init__(self, key, skey):
         self.api_key = key
@@ -194,21 +195,21 @@ class OkCoinComApi(object):
             i += 5
         return return_list
 
-    def get_order_info(self,contract_type):
-        url = 'https://www.okex.com/api/v1/future_order_info.do'
-        p = dict()
-        p['symbol'] = 'btc_usd'
-        p['contract_type'] = contract_type
-        p['api_key'] = self.api_key
-
-        p['status'] = '2'
-        p['order_id'] = '-1'
-        p['current_page'] = '0'
-        p['page_length'] = '10'
-        p['sign'] = self.sign(p)
-        #print p
-        req = requests.post(url, headers=self.headers, params=p,timeout=self.timeout)
-        return req.json()
+    # def get_order_info(self,contract_type):
+    #     url = 'https://www.okex.com/api/v1/future_order_info.do'
+    #     p = dict()
+    #     p['symbol'] = 'btc_usd'
+    #     p['contract_type'] = contract_type
+    #     p['api_key'] = self.api_key
+    #
+    #     p['status'] = '2'
+    #     p['order_id'] = '-1'
+    #     p['current_page'] = '0'
+    #     p['page_length'] = '10'
+    #     p['sign'] = self.sign(p)
+    #     #print p
+    #     req = requests.post(url, headers=self.headers, params=p,timeout=self.timeout)
+    #     return req.json()
 
     def get_userinfo(self):
         url = 'https://www.okex.com/api/v1/future_userinfo.do'

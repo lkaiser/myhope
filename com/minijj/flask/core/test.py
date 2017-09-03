@@ -130,11 +130,11 @@ if __name__ == '__main__':
    #
    # print sys.path
 
-   str = "[(2, -27), (2, -26.652), (2, -26), (2, -24.558), (2, -22.749), (2, -21.996), (2, -20.78), (2, -20.73), (1, -18.486), (2, -17.708), (2, -15.421)]"
-   b = eval(str)
-   b.reverse()
-   print b
-   print type(b[0])
+   # str = "[(2, -27), (2, -26.652), (2, -26), (2, -24.558), (2, -22.749), (2, -21.996), (2, -20.78), (2, -20.73), (1, -18.486), (2, -17.708), (2, -15.421)]"
+   # b = eval(str)
+   # b.reverse()
+   # print b
+   # print type(b[0])
 
    # print redis.get("fastforml")
    # redis.delete("fastforml")
@@ -142,8 +142,8 @@ if __name__ == '__main__':
 
 
    m = hashlib.md5()
-   str = "lulu"
-   m.update(str)
+   strs = "lulu"
+   m.update(strs)
    print m.hexdigest()
 
    t = [0,0,0]
@@ -151,6 +151,14 @@ if __name__ == '__main__':
    t[2] = 1
    print t
    print sum(t)
+
+   trade_list =  [[5, 4563.98]]
+   i = 0
+   while i < len(trade_list):
+       logger.info(trade_list)
+       for k in trade_list[i:i + 5]:
+            print k
+            i += 5
 
    #print constants.const.PI
 

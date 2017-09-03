@@ -86,7 +86,6 @@ class HoldPostion(object):
             # logger.info("############position3 spend" + bytes(((end - start).microseconds) / 1000.0) + " milli seconds")
 
     def start(self):
-        logger.info("########### what the fuck wrong ##########")
         pm = threading.Thread(target=self.position_mon)
         pm.setDaemon(True)
         pm.start()
