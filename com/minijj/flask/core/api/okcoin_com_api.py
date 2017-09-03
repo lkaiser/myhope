@@ -105,7 +105,7 @@ class OkCoinComApi(object):
         p = dict()
         p['api_key'] = self.api_key
         p['symbol'] = 'btc_usd'
-        p['status'] = '2'
+        #p['status'] = '2'
         p['contract_type'] = contract_type
         p['order_id'] = ','.join(orders_id)
         p['sign'] = self.sign(p)
@@ -187,6 +187,7 @@ class OkCoinComApi(object):
         while i < len(trade_list):
             for k in trade_list[i:i + 5]:
                 l.append(self.creat_orders_data_str(k[0], k[1], type_))
+            logger.info(l)
             for x in self.__batch_trade(contract_type, "[" + ",".join(l) + "]", )[
                 'order_info']:
                 return_list.append(x['order_id'])

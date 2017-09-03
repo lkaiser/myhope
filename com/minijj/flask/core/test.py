@@ -152,13 +152,9 @@ if __name__ == '__main__':
    print t
    print sum(t)
 
-   trade_list =  [[5, 4563.98]]
-   i = 0
-   while i < len(trade_list):
-       logger.info(trade_list)
-       for k in trade_list[i:i + 5]:
-            print k
-            i += 5
+   ls = ["1", "2", "3"]
+   print ','.join(ls)
+
 
    #print constants.const.PI
 
