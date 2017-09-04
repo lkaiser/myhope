@@ -56,7 +56,8 @@ class HoldPostion(object):
                         self.mexliquidation.suborder(okprice, buy_price, h_amount_change, self.hserver.expected_profit, last_pos[1], 'sell')
 
                 if l_amount_change > 0:
-                    holdokprice = (new_holding['buy_price_avg'] * new_holding['buy_amount'] - init_holding['buy_price_avg'] * init_holding['buy_amount']) / l_amount_change
+                    #holdokprice = (new_holding['buy_price_avg'] * new_holding['buy_amount'] - init_holding['buy_price_avg'] * init_holding['buy_amount']) / l_amount_change
+                    holdokprice = self.lserver.lastsellprice
                     okprice = holdokprice
                     sell_price = round(self.market.mex_bids_price - 5, 1)  # 以成交为第一目的
                     logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(self.market.mex_bids_price))
