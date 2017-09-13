@@ -351,11 +351,13 @@ class OkLower(object):
         self.event.set() #开启
 
     def stop(self):
-        self.event.clear()
+        if self.event.isSet():
+            self.event.clear()
         logger.info("###############################Lower stopped");
 
     def stopOpen(self):
-        self.openevent.clear()
+        if self.openevent.isSet():
+            self.openevent.clear()
         run = self.conn.get(constants.lower_buy_run_key)
         if run:
             self.conn.set(constants.lower_buy_run_key,False)
@@ -367,7 +369,8 @@ class OkLower(object):
             self.conn.set(constants.lower_buy_run_key,True)
 
     def stopLiquid(self):
-        self.liquidevent.clear()
+        if self.liquidevent.isSet():
+            self.liquidevent.clear()
         run = self.conn.get(constants.lower_sell_run_key)
         if run:
             self.conn.set(constants.lower_sell_run_key,False)

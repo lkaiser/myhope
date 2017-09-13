@@ -173,6 +173,8 @@ class BitMEX(object):
         """Send a request to BitMEX Servers."""
         # Handle URL
         url = self.base_url + api
+        if postdict.has_key('clOrdID') and postdict['clOrdID']:
+            postdict['clOrdID'] = self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf-8').rstrip('=\n')
 
         # Default to POST if data is attached, GET otherwise
         if not verb:

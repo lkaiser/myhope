@@ -189,39 +189,56 @@ class OkHigher(object):
                 ids = []
                 for order in self.openorders.values():
                     ids.append(str(order[0]['order_id']))
-                neworders = self.okcoin.get_order_info(self.contract_type, ids)
-                logger.info(neworders)
-                for order in neworders['orders']:
-                    self.openorders[order['order_id']][0] = order
+                if ids:
+                    neworders = self.okcoin.get_order_info(self.contract_type, ids)
+                    logger.info(neworders)
+                    for order in neworders['orders']:
+                        self.openorders[order['order_id']][0] = order
+                        logger.info("###########who is fucking wrong")
                 self.openlock.release()
         else:
             if self.liquidlock.acquire():
                 ids = []
                 for order in self.liquidorders.values():
                     ids.append(str(order[0]['order_id']))
-                neworders = self.okcoin.get_order_info(self.contract_type, ids)
-                for order in neworders['orders']:
-                    self.liquidorders[['order_id']][0] = order
+                if ids:
+                    neworders = self.okcoin.get_order_info(self.contract_type, ids)
+                    for order in neworders['orders']:
+                        self.liquidorders[['order_id']][0] = order
                 self.liquidlock.release()
 
     def remove_no_use_orders(self,amount_change):
         if amount_change >0 :
             if self.openlock.acquire():
+                logger.info(self.openorders)
+                logger.info(self.open_his)
                 for order in self.openorders.values():
+                    logger.info("###########who is fucking wrong remove_no_use_orders")
                     if order[0]['status'] == 2 or order[0]['status'] == -1:
-                        del self.openorders[order[0]['order_id']]
-                        del self.open_his[order[0]['order_id']]
-                        if order[0]['status'] == 2: #订单全部成交，说明可以重新开仓了
-                            self.openstatus = True
+                        remove = False
+                        if not self.open_his.has_key(order[0]['order_id']) and order[0]['deal_amount'] == 0:  # ,没有，且deal_amount=0 可删
+                            remove = True
+                        if remove or self.openorders[order[0]['order_id']]['deal_amount'] == self.open_his[order[0]['order_id']]:  # 一致，说明已经记录，可以删除了
+                            del self.openorders[order[0]['order_id']]
+                            if not remove:
+                                del self.open_his[order[0]['order_id']]
+                    if order[0]['status'] == 2: #订单全部成交，说明可以重新开仓了
+                        self.openstatus = True
                 self.openlock.release()
+                logger.info("###########who is fucking wrong is you?")
         else:
             if self.liquidlock.acquire():
                 for order in self.liquidorders.values():
                     if order[0]['status'] == 2 or order[0]['status'] == -1:
-                        del self.liquidorders[order[0]['order_id']]
-                        del self.liquid_his[order[0]['order_id']]
-                        if order[0]['status'] == 2: #订单全部成交，说明可以重新平仓了
-                            self.liquidstatus = True
+                        remove = False
+                        if not self.open_his.has_key(order[0]['order_id']) and order[0]['deal_amount'] == 0:# ,没有，且deal_amount=0 可删
+                            remove = True
+                        if remove or self.liquidorders[order[0]['order_id']]['deal_amount'] == self.liquid_his[order[0]['order_id']]:  # 一致，说明已经记录，可以删除了
+                            del self.liquidorders[order[0]['order_id']]
+                            if not remove:
+                                del self.liquid_his[order[0]['order_id']]
+                    if order[0]['status'] == 2: #订单全部成交，说明可以重新平仓了
+                        self.liquidstatus = True
                 self.liquidlock.release()
 
     def add_new_open_orders(self,orders,levels):
@@ -309,7 +326,7 @@ class OkHigher(object):
                         bidprice = round(price + highest[1] - self.expected_profit,2)
                         for order in self.liquidorders.values():
                             logger.info("######### order " + str(order[0]['order_id']) + "level = " + str(order[2]) + " 平仓价 = " + str(order[0]['price']) + " 重开价 =" + str(round(order[0]['price'] - bidprice - 5*order[2],2)))
-                            if not (-0.1 < round(order[0]['price'] - bidprice - 5*order[2],2) < order[1]):  # 向上波动价格小于1.5 且没有成交情况下，无需重新下单 openorder[order,ignoreprice,level]
+                            if not (-0.4 < round(order[0]['price'] - bidprice - 5*order[2],2) < order[1]):  # 向上波动价格小于1.5 且没有成交情况下，无需重新下单 openorder[order,ignoreprice,level]
                                 reopen_orders.append(order)
 
                             if couldsub < self.deal_amount and not order[2]:
@@ -331,6 +348,7 @@ class OkHigher(object):
                             cancel_result = self.okcoin.cancel_all_orders(self.contract_type, ids)#一次最多3笔
                             logger.info(cancel_result)
                             self.update_orders_status(-1)
+                            self.remove_no_use_orders(-1)
 
                             for order in self.openorders.values(): #取消后需重新刷新 subedorders 及 couldsub
                                 if order[0]['status'] != 2 and order[0]['status'] != -1:  # 排除全部成交、已撤单成功的，其它全都视为已提交等待成交订单
@@ -359,6 +377,7 @@ class OkHigher(object):
                                     levels.append([x,round(price - 5*x,2),1.5*x+1.5])
                             # 提交订单
                             logger.info(tradlist)
+                            self.lastsub = datetime.datetime.now()
                             logger.info("下单，下单，平平平 amount= " + str(tradlist) + "mex price = " + bytes(price + self.expected_profit - highest[1]) + " coin price = " + bytes(price) + " baiss= " + bytes(highest[1]))
                             trade_back = self.okcoin.batch_trade(self.contract_type,tradlist, 4)
                             logger.info(trade_back)
@@ -403,7 +422,7 @@ class OkHigher(object):
                 subedorders = [0, 0, 0]
                 tosuborders = [0, 0, 0]
                 couldsub = self.MAX_Size - self.ok_sell_balance
-                logger.info(self.openorders.values())
+                #logger.info(self.openorders.values())
                 if self.openorders:
                     for order in self.openorders.values():
                         if order[0]['status'] != 2 and order[0]['status'] != -1:  # 排除全部成交、已撤单成功的，其它全都视为已提交等待成交订单
@@ -412,12 +431,13 @@ class OkHigher(object):
 
                     for order in self.openorders.values():
                         logger.info("######### order "+str(order[0]['order_id']) + "level = " +str(order[2]) +" 开仓价 = " + str(order[0]['price']) +" 重开价 ="+ str(round(price+ self.basis_create +self.expected_profit*order[2]*0.5,2)))
-                        if not(-0.1< (round(price+ self.basis_create +self.expected_profit*order[2]*0.5,2)) - order[0]['price'] <order[1]):  #向上波动价格小于1.5 且没有成交情况下，无需重新下单 openorder[order,ignoreprice,level]
+                        if not(-0.4< (round(price+ self.basis_create +self.expected_profit*order[2]*0.5,2)) - order[0]['price'] <order[1]):  #向上波动价格小于1.5 且没有成交情况下，无需重新下单 openorder[order,ignoreprice,level]
                             reopen_orders.append(order)
                         if couldsub < self.deal_amount and not order[2]:
                             if order not in reopen_orders:
                                 reopen_orders.append(order) #所剩提交空间不多，取消全部2,3级订单
                     logger.info(reopen_orders)
+
                     if reopen_orders: #存在需要重新提交订单，以及强制取消订单
                         ids = []
                         for i in reopen_orders:
@@ -435,6 +455,7 @@ class OkHigher(object):
 
                         #if couldsub < self.deal_amount*2
                         self.update_orders_status(1)
+                        self.remove_no_use_orders(1)
                         logger.info("#######不让更新？")
                         for order in self.openorders.values(): #取消后需重新刷新 subedorders 及 couldsub
                             if order[0]['status'] != 2 and order[0]['status'] != -1:  # 排除全部成交、已撤单成功的，其它全都视为已提交等待成交订单
@@ -462,6 +483,7 @@ class OkHigher(object):
                                 levels.append([x,round(price + self.expected_profit*x*0.5,2),3*x+1.5])
                         # 提交订单
                         logger.info(tradlist)
+                        self.lastsub = datetime.datetime.now()
                         logger.info("下单，下单，买买买 amount= " + str(tradlist) + "mex price = " + bytes(price - self.basis_create) + " coin price= " + bytes(price) + " basis_create= " + bytes(self.basis_create))
                         trade_back = self.okcoin.batch_trade(self.contract_type,tradlist, 2)
                         logger.info(trade_back)
@@ -545,13 +567,18 @@ class OkHigher(object):
             # check.setDaemon(True)
             # check.start()
         self.event.set()  # 开启
+        self.openevent.set()
+        self.liquidevent.set()
+        self.waitevent.set()
 
     def stop(self):
-        self.event.clear()
+        if self.event.isSet():
+            self.event.clear()
         logger.info("###############################Higher stopped");
 
     def stopOpen(self):
-        self.openevent.clear()
+        if self.openevent.isSet():
+            self.openevent.clear()
         run = self.conn.get(constants.higher_buy_run_key)
         if run:
             self.conn.set(constants.higher_buy_run_key,False)
@@ -563,7 +590,8 @@ class OkHigher(object):
             self.conn.set(constants.higher_buy_run_key,True)
 
     def stopLiquid(self):
-        self.liquidevent.clear()
+        if self.liquidevent.isSet():
+            self.liquidevent.clear()
         logger.info("###########now liquidevent status=" + str(self.event.isSet()))
         run = self.conn.get(constants.higher_sell_run_key)
         if run:

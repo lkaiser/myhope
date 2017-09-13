@@ -110,6 +110,7 @@ class OkCoinComApi(object):
         p['order_id'] = ','.join(orders_id)
         p['sign'] = self.sign(p)
         req = requests.post(url, headers=self.headers, params=p, timeout=self.timeout)
+        logger.info(req)
         return req.json()
 
     def batch_get_order_info(self, contract_type):

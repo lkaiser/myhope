@@ -155,6 +155,19 @@ if __name__ == '__main__':
    ls = ["1", "2", "3"]
    print ','.join(ls)
 
+   openorders = {9428634258: [{u'status': -1, u'contract_name': u'BTC0929', u'fee': 0, u'create_date': 1504501912000, u'order_id': 9428634258, u'price': 4501.57, u'amount': 20, u'unit_amount': 100, u'price_avg': 0, u'lever_rate': 10, u'type': 2, u'symbol': u'btc_usd', u'deal_amount': 0}, 4.5, 1], 9428634275: [{u'status': -1, u'contract_name': u'BTC0929', u'fee': 0, u'create_date': 1504501912000, u'order_id': 9428634275, u'price': 4514.07, u'amount': 10, u'unit_amount': 100, u'price_avg': 0, u'lever_rate': 10, u'type': 2, u'symbol': u'btc_usd', u'deal_amount': 0}, 7.5, 2], 9428634246: [{u'status': -1, u'contract_name': u'BTC0929', u'fee': 0, u'create_date': 1504501912000, u'order_id': 9428634246, u'price': 4489.07, u'amount': 10, u'unit_amount': 100, u'price_avg': 0, u'lever_rate': 10, u'type': 2, u'symbol': u'btc_usd', u'deal_amount': 0}, 1.5, 0]}
+   open_his = {}
+   for order in openorders.values():
+       if order[0]['status'] == 2 or order[0]['status'] == -1:
+           remove = False
+           if not open_his.has_key(order[0]['order_id']) and order[0]['deal_amount'] == 0:  # ,没有，且deal_amount=0 可删
+               remove = True
+           if remove or openorders[order[0]['order_id']]['deal_amount'] == open_his[order[0]['order_id']]:  # 一致，说明已经记录，可以删除了
+               del openorders[order[0]['order_id']]
+               if not remove:
+                    del open_his[order[0]['order_id']]
+
+
 
    #print constants.const.PI
 

@@ -114,12 +114,21 @@ class TradeMexAndOk(object):
 
                     if (prices[4] - prices[1]) >= high:
                         logger.info("#########high strategy acitve prices[4] = "+bytes(prices[4])+" prices[1] = "+bytes(prices[1]) +" high = "+bytes(high))
-                        t.liquidL()
-                        t.startHserver(high)
+                        #t.liquidL()
+                        t.startHserver()
                     if (prices[3] - prices[2]) <= low:
                         logger.info("#########low strategy acitve prices[3] = " + bytes(prices[3]) + " prices[2] = " + bytes(prices[2]) + " low = " + bytes(low))
-                        t.liquidH()
-                        t.startLserver(low)
+                        #t.liquidH()
+                        t.startLserver()
+                    # if self.redis.get(constants.strategy_liquid_when_set_up):
+                    #     if (prices[4] - prices[1]) >= high:
+                    #         if t.OkHigher.MAX_Size <= t.OkHigher.ok_sell_balance:#建仓已满
+                    #             if t.OkLower.ok_sell_balance > 0: #平仓
+                    #                 t.OkLower.liquidAll()
+                    #     if (prices[3] - prices[2]) <= low:
+                    #         if t.OkLower.MAX_Size <= t.OkLower.ok_sell_balance: #建仓已满
+                    #             if t.OkLower.ok_sell_balance > 0: #平仓
+                    #                 t.OkHigher.liquidAll()
             except:
                 pass
 
@@ -130,6 +139,7 @@ class TradeMexAndOk(object):
 
         self.redis.set(constants.higher_server,False)
         self.redis.set(constants.lower_server, False)
+        self.redis.set(constants.strategy_liquid_when_set_up,True)
 
     def upStatu(self):
         self.status = self.redis.get(constants.trade_server)
@@ -169,6 +179,18 @@ class TradeMexAndOk(object):
             self.stopHserver()
         else:
             self.startHserver()
+
+    def stopOpenH(self):
+        self.OkHigher.stopOpen()
+
+    def remainOpenH(self):
+        self.OkHigher.remainOpen()
+
+    def stopOpenL(self):
+        self.OkLower.stopOpen()
+
+    def remainOpenL(self):
+        self.OkLower.remainOpen()
 
     def switchLserver(self):
         rs = self.redis.get(constants.lower_server)
