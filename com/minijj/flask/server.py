@@ -104,6 +104,9 @@ def chart():
 def admin():
     tradeserver = redis.get(constants.trade_server)
 
+    #lstatus = requests.get(constants.http_server + "/lstatus/")
+    #print lstatus
+
     main = redis.get(constants.lower_main_run_key)
     buy = redis.get(constants.lower_buy_run_key)
     sell = redis.get(constants.lower_sell_run_key)
@@ -114,9 +117,11 @@ def admin():
     sell2 = redis.get(constants.higher_buy_run_key)
     server2 = redis.get(constants.higher_server)
 
-
     ok_holding = okcoin.get_position(constants.higher_contract_type)['holding'][0]
+    # if ok_holding:
+    #     ok_holding = ok_holding
     #ok_holding = []
+    #print mex
     mex_holding = mex.get_position(constants.higher_mex_contract_type)
     #print mex_holding
 
@@ -169,12 +174,25 @@ def admin():
 
     return render_template('admin2.html',forml=forml,formh=formh,ok_holding=ok_holding,mex_holding=mex_holding,tradeserver=str(tradeserver),main=str(main),buy=str(buy),sell=str(sell),server=str(server),main2=str(main2),buy2=str(buy2),sell2=str(sell2),server2=str(server2),all=all,holdh=holdh,holdl=holdl,orders=orders,lowercreate = lowercreate,highercreate=highercreate,sum=count,todaysum=todaycount)
 
+@app.route('/mex')
+@login_required
+def mexdo():
+    ac = request.args.get("action")
+    count = request.args.get("count")
+    prices = redis.get(constants.ok_mex_price)
+    print "######count=",count
+    print int(count)*100
+    if "buy" == ac:
+        print mex.buy(constants.higher_mex_contract_type,round((prices[1]+5),1),int(count) * 100)
+    if "sell" == ac:
+        print mex.sell(constants.higher_mex_contract_type,round((prices[2]-5),1),int(count) * 100)
+    return "True"
+
 @app.route('/liquid')
 @login_required
 def liquid():
     ac = request.args.get("action")
     count = request.args.get("count")
-    print ac
     #print count
     if "liquidh" == ac:
         okcoin.tradeRival(constants.higher_contract_type, int(count), 4)

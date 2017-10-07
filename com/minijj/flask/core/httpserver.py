@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # coding=utf-8
 import logging.handlers
+import json
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
 import time
@@ -82,13 +83,21 @@ class MyHandler(BaseHTTPRequestHandler):
             self.server.trade.hsetting()
         if "/lsetting/" == path:
             self.server.trade.lsetting()
+        if "/hstatus/" == path:
+            return self.server.trade.hstatus()
+        if "/lstatus/" == path:
+            return self.server.trade.lstatus()
+
 
 
     def do_GET(self):
         '''Handle a request for headers and body'''
         print "Get path is:%s" % self.path
         self._writeheaders()
-        self.execcmd(self.path)
+        rs = self.execcmd(self.path)
+        if rs is None:
+            logger.info("################## this result = " + json.dumps(rs))
+            self.wfile.write(json.dumps(rs))
         # if doc is None:
         #     self.wfile.write('''
         #                         <html>

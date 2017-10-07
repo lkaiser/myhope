@@ -124,7 +124,7 @@ class MarketPrice(object):
 
             except Exception, e:
                 logger.info(e)
-                self.okcoin.cancel_all(self.contract_type)
+                #self.okcoin.cancel_all(self.contract_type)
                 self.init_ws()
 
     def ping_thread(self):

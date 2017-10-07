@@ -364,6 +364,9 @@ class OkHigher(object):
             # check.setDaemon(True)
             # check.start()
         self.event.set()  # 开启
+        self.waitevent.set()
+        self.liquidevent.set()
+        self.openevent.set()
 
     def stop(self):
         self.event.clear()

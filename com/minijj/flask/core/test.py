@@ -148,6 +148,9 @@ if __name__ == '__main__':
 
    #print constants.const.PI
 
+   a = '{"op": "subscribe", "args": ["orderBook10:'+'haha'+'"]}'
+   print a
+
    #logger.info("################ammout 增加了 " + bytes(0) + "，持仓变化如下 #######################")
 
     #print "################",mex2.position("XBTM17")

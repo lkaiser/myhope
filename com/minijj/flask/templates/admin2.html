@@ -62,6 +62,24 @@ $(document).ready(function() {
         }
      });
 
+    $('.mex').click(function(){
+        var self = this;
+        var a=confirm("确认mex买卖？");
+        if(a==true){
+            var action = $(self).attr("name");
+            var count = $(self).parent().prev().find("input").val()
+            $.get("/mex",
+                { action: action, count: count },
+                function(data){
+                    if("False" == data) {
+                        alert("mex操作失败");
+                    }else {
+                        alert("mex操作成功");
+                    }
+                })
+        }
+     });
+
     $('#trade').click(function(){
         var self = this;
         var id = $(this).attr("id");
@@ -179,6 +197,16 @@ $(document).ready(function() {
                             </div>
                         </div>
                             </div>
+                        <div class="row">
+                        <div class="col-lg-12">
+                            <div class="list-group">
+                                <div class="form-group">
+                                    <div><input class="form-control" min="1" type="number"></div>
+                                    <div><button type="button" class="btn btn-success mex" name="buy">mex买入</button><button type="button" class="btn btn-success mex" name="sell">mex卖出</button></div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
                         <!-- /.panel-body -->
                     </div>
                     <!-- /.panel -->

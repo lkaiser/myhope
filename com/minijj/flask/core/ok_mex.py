@@ -114,12 +114,12 @@ class TradeMexAndOk(object):
 
                     if (prices[4] - prices[1]) >= high:
                         logger.info("#########high strategy acitve prices[4] = "+bytes(prices[4])+" prices[1] = "+bytes(prices[1]) +" high = "+bytes(high))
-                        t.liquidL()
-                        t.startHserver(high)
+                        #t.liquidL()
+                        t.startHserver()
                     if (prices[3] - prices[2]) <= low:
                         logger.info("#########low strategy acitve prices[3] = " + bytes(prices[3]) + " prices[2] = " + bytes(prices[2]) + " low = " + bytes(low))
-                        t.liquidH()
-                        t.startLserver(low)
+                        #t.liquidH()
+                        t.startLserver()
             except:
                 pass
 
@@ -169,6 +169,18 @@ class TradeMexAndOk(object):
             self.stopHserver()
         else:
             self.startHserver()
+
+    def stopOpenH(self):
+        self.OkHigher.stopOpen()
+
+    def remainOpenH(self):
+        self.OkHigher.remainOpen()
+
+    def stopOpenL(self):
+        self.OkLower.stopOpen()
+
+    def remainOpenL(self):
+        self.OkLower.remainOpen()
 
     def switchLserver(self):
         rs = self.redis.get(constants.lower_server)
@@ -235,6 +247,12 @@ class TradeMexAndOk(object):
 
     def cancel_all(self):
         self.okcoin.cancel_all(self.contract_type)
+
+    def hstatu(self):
+        return [self.OkHigher.event.isSet(),self.OkHigher.openevent.isSet(),self.OkHigher.liquidevent.isSet(),self.OkHigher.waitevent.isSet()]
+
+    def lstatu(self):
+        return [self.OkLower.event.isSet(),self.OkLower.openevent.isSet(),self.OkLower.liquidevent.isSet(),self.OkLower.waitevent.isSet()]
 
 
     def async_raise(self,tid, exctype):

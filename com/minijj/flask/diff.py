@@ -72,7 +72,6 @@ class Diff(object):
             self.ws_mex.close()
             self.ws_mex.connect("wss://www.bitmex.com/realtime")
             op = '{"op": "subscribe", "args": ["orderBook10:'+constants.higher_mex_contract_type+'"]}'
-            print op
             self.ws_mex.send(op)
             self.ws_mex.settimeout = 6
         except Exception, e:

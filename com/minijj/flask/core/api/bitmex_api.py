@@ -32,6 +32,7 @@ class Bitmex(object):
     def buy(self, symbol, price, amount):
         expires = int(round(time.time()) + 10)
         postdict = {"orderQty": amount, "symbol": symbol, "price": price}
+        #print postdict
         data = json.dumps(postdict)
         headers = {'api-expires': str(expires), 'api-key': self.apiKey,
                    'api-signature': self.generate_signature(self.apiSecret, 'POST',

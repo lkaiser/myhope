@@ -168,7 +168,7 @@ class BitMEX(object):
         }
         return self._curl_bitmex(api=api, postdict=postdict, verb="POST")
 
-    @retry(stop_max_attempt_number=1, wait_fixed=5000)
+    #@retry(stop_max_attempt_number=1, wait_fixed=5000)
     def _curl_bitmex(self, api, query=None, postdict=None, timeout=3, verb=None, rethrow_errors=False):
         """Send a request to BitMEX Servers."""
         # Handle URL
