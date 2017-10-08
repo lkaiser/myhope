@@ -83,7 +83,7 @@ class mexliquidation(object):
                     break
                 else:
                     waiting += 1
-                    time.sleep(2)
+                    time.sleep(0.5)
                     cel = self.mex.cancel(rst['orderID'])
                     logger.info(cel)
                     if 'Filled' == cel[0]['ordStatus']:
@@ -152,7 +152,7 @@ class mexliquidation(object):
                     break
                 else:
                     waiting += 1
-                    time.sleep(2)
+                    time.sleep(0.5)
                     cel = self.mex.cancel(rst['orderID'])
                     if order[2] > 0:
                         logger.info('###mex2秒后取消卖出建仓###')

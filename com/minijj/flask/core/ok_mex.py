@@ -255,56 +255,6 @@ class TradeMexAndOk(object):
         return [self.OkLower.event.isSet(),self.OkLower.openevent.isSet(),self.OkLower.liquidevent.isSet(),self.OkLower.waitevent.isSet()]
 
 
-    def async_raise(self,tid, exctype):
-        """raises the exception, performs cleanup if needed"""
-        tid = ctypes.c_long(tid)
-        if not inspect.isclass(exctype):
-            exctype = type(exctype)
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-        if res == 0:
-            raise ValueError("invalid thread id")
-        elif res != 1:
-            # """if it returns a number greater than one, you're in trouble,
-            # and you should call it again with exc=NULL to revert the effect"""
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
-            raise SystemError("PyThreadState_SetAsyncExc failed")
-
-    def stop_thread(self,thread):
-        self.async_raise(thread.ident, SystemExit)
-
-    def cal_order(self, okposition, mexposition):
-        sposition = self.redis.get(self.slipkey)
-        if not sposition:
-            sposition = []
-        if not okposition or not okposition['sell_amount']:
-            self.redis.set(self.slipkey, [])
-        else:
-            if (mexposition[1] != okposition['sell_amount'] * 100):
-                logger.info("两端仓位不平，对冲个屁啊，赶紧改！")
-                sys.exit(1)
-            self.split_position = sposition
-            cnt = 0
-            allbais = 0
-            for pos in sposition:
-                cnt += pos[0]
-                allbais += pos[0] * pos[1]
-            if cnt < okposition['sell_amount']:
-                a = (okposition['sell_price_avg'] - mexposition[0]) * okposition['sell_amount'] - allbais
-                b = okposition['sell_amount'] - cnt
-                bais = round(a / b, 3)
-                self.split_position.append(((okposition['sell_amount'] - cnt), bais))
-                self.redis.set(self.slipkey, self.split_position)
-            if (cnt > okposition['sell_amount']):
-                left_amount = cnt - okposition['sell_amount']
-                while (self.split_position and left_amount > 0):
-                    last_pos = self.split_position.pop()
-                    left_amount = left_amount - last_pos[0]
-                    if (left_amount < 0):
-                        self.split_position.append((-left_amount, last_pos[1]))
-                        break
-                self.redis.set(self.slipkey, self.split_position)
-
-
 t = TradeMexAndOk()
 t.start()
 

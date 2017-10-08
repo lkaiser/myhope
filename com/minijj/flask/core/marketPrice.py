@@ -36,6 +36,7 @@ class MarketPrice(object):
         self.q_bids_price = Queue.Queue(1)
         self.mex_bids_price = None
         self.mex_asks_price = None
+        self.depth_5_price = None
 
 
         # sys.exit(0)
@@ -54,6 +55,14 @@ class MarketPrice(object):
         asks_price = self.calc_price(json.loads(recv_data)['data'][0]['asks'][0:5])
         bids_price = self.calc_price(json.loads(recv_data)['data'][0]['bids'][0:5])
         return asks_price, bids_price
+
+    def mex_order_price(self, recv_data):
+        asks_price = json.loads(recv_data)['data'][0]['asks'][0:5]
+        bids_price = json.loads(recv_data)['data'][0]['bids'][0:5]
+        self.depth_5_price = [asks_price, bids_price]
+
+    def get_depth_5_price(self):
+        return self.depth_5_price
 
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000)
@@ -74,6 +83,7 @@ class MarketPrice(object):
                 while '"table":"orderBook10"' not in recv_data:
                     recv_data = self.ws.recv()
                 init_asks_price, init_bids_price = self.calc_mex_order_price(recv_data)
+                self.mex_order_price(recv_data)
                 self.q_asks_price.put(init_asks_price)
                 self.q_bids_price.put(init_bids_price)
                 return init_asks_price, init_bids_price

@@ -42,14 +42,14 @@ class HoldPostion(object):
                 if h_amount_change > 0: #ok卖单变化，higher
                     holdokprice = (new_holding['sell_price_avg'] * (new_holding['sell_amount']) - init_holding['sell_price_avg'] * (init_holding['sell_amount'])) / h_amount_change
                     okprice = holdokprice
-                    sell_price = round(self.market.mex_bids_price + 8, 1)  # 以成交为第一目的
+                    sell_price = round(self.market.mex_bids_price + 15, 1)  # 以成交为第一目的
                     logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(self.market.mex_bids_price))
                     logger.info("################ammout 增加了 " + bytes(h_amount_change) + "，持仓变化如下 #######################")
                     #self.hserver.up_basis_create(h_amount_change)
                     self.mexliquidation.suborder(okprice, sell_price, h_amount_change, self.hserver.expected_profit, self.hserver.basis_create, 'buy')
                 if h_amount_change < 0:  # 有仓位被平
                     okprice = self.hserver.lastevenuprice #TODO 木有啥好办法，取个近似值吧
-                    buy_price = round(self.market.mex_asks_price - 5, 1)
+                    buy_price = round(self.market.mex_asks_price - 15, 1)
                     # 按bais价格从高到低减,排序
                     last_pos = self.hserver.update_split_position(h_amount_change)
                     if last_pos:
@@ -59,14 +59,14 @@ class HoldPostion(object):
                     #holdokprice = (new_holding['buy_price_avg'] * new_holding['buy_amount'] - init_holding['buy_price_avg'] * init_holding['buy_amount']) / l_amount_change
                     holdokprice = self.lserver.lastsellprice
                     okprice = holdokprice
-                    sell_price = round(self.market.mex_bids_price - 5, 1)  # 以成交为第一目的
+                    sell_price = round(self.market.mex_bids_price - 15, 1)  # 以成交为第一目的
                     logger.info("avarage ok deal price" + bytes(okprice) + " while mex bid price =" + bytes(self.market.mex_bids_price))
                     logger.info("################ammout 增加了 " + bytes(l_amount_change) + "，持仓变化如下 #######################")
                     #self.lserver.up_basis_create(h_amount_change)
                     self.mexliquidation.suborder(okprice, sell_price, l_amount_change, self.lserver.expected_profit, self.lserver.basis_create, 'sell')
                 if l_amount_change <0:
                     okprice = self.lserver.lastevenuprice
-                    buy_price = round(self.market.mex_asks_price + 5, 1)
+                    buy_price = round(self.market.mex_asks_price + 15, 1)
                     # 按bais价格从高到低减,排序
                     last_pos = self.lserver.update_split_position(l_amount_change)
                     if last_pos:

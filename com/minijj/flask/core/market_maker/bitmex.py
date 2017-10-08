@@ -169,13 +169,13 @@ class BitMEX(object):
         return self._curl_bitmex(api=api, postdict=postdict, verb="POST")
 
     #@retry(stop_max_attempt_number=1, wait_fixed=5000)
-    def _curl_bitmex(self, api, query=None, postdict=None, timeout=3, verb=None, rethrow_errors=False):
+    def _curl_bitmex(self, api, query=None, postdict=None, timeout=5, verb=None, rethrow_errors=False):
         """Send a request to BitMEX Servers."""
         # Handle URL
         url = self.base_url + api
 
-        clOrdID = self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf-8').rstrip('=\n')
-        postdict['clOrdID']  = clOrdID
+        #clOrdID = self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf-8').rstrip('=\n')
+        #postdict['clOrdID']  = clOrdID
 
         # Default to POST if data is attached, GET otherwise
         if not verb:

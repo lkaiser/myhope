@@ -64,39 +64,12 @@ def tes(pa=None):
 
 tes("ha")
 tes()
+from core.api import bitmex_api
+mex = bitmex_api.Bitmex("vXainyeMrILyP0v3yiDHolLseGDr5XyqWLAiGhDn00pQytWY","iJ0GlU97wuife_k3uAV2zxy_")
 
-def event1(event):
-    event.clear()
-    print "event1 要卡住咯"
-    event.wait()
-    print "event1 活过来了"
+#print mex.buy('XBTU17',round(3760.233,1),int(2) * 100)
+print mex.sell('XBTU17',round(3730.155,1),int(2) * 100)
 
-def event2(event):
-    event.clear()
-    print "event2 要卡住咯"
-    event.wait()
-    print "event2 活过来了"
-
-event = threading.Event()
-
-pm = threading.Thread(target=event1,args=(event,))
-pm.setDaemon(True)
-pm.start()
-
-time.sleep(2)
-
-pm2 = threading.Thread(target=event2,args=(event,))
-pm2.setDaemon(True)
-pm2.start()
-
-while 1:
-    print "我是主进程"
-    time.sleep(2)
-    print "你们谁卡住了，我来释放你们"
-    event.set()
-    print "孩儿们，玩去吧"
-    time.sleep(2)
-    break
-
+#print round(3780,2)
 
 #print a + b
