@@ -81,6 +81,13 @@ strategy_lower_key = "strategy_lower"
 
 
 
+#mexpush
+sys_prfix = "minijj_"
+opened_high = sys_prfix+"opened_high"
+opened_low = sys_prfix+"opened_low"
+
+
+
 def getCfg():
     config = ConfigParser.ConfigParser()
     config.readfp(open(inipath + '/constants.ini'))

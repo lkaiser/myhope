@@ -101,6 +101,13 @@ class BitMEX(object):
         """
         return self.place_order(-quantity, price)
 
+    def get(self,clOrdID):
+        endpoint = "order"
+        postdict = {
+            'clOrdID': clOrdID
+        }
+        return self._curl_bitmex(api=endpoint, postdict=postdict, verb="GET")
+
     @authentication_required
     def place_order(self, quantity, price):
         """Place an order."""
