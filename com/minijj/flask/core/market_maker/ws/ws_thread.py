@@ -28,7 +28,7 @@ class BitMEXWebsocket():
     MAX_TABLE_LEN = 200
 
     def __init__(self):
-        self.logger = logging.getLogger('root')
+        self.logger = logging.getLogger('ws')
         self.__reset()
 
     def connect(self, endpoint="", symbol="XBTN15", shouldAuth=True):
@@ -40,11 +40,13 @@ class BitMEXWebsocket():
 
         # We can subscribe right in the connection querystring, so let's build that.
         # Subscribe to all pertinent endpoints
+        #subscriptions = [sub + ':' + symbol for sub in ["quote", "trade"]]
         subscriptions = [sub + ':' + symbol for sub in ["quote", "trade"]]
         subscriptions += ["instrument"]  # We want all of them
         if self.shouldAuth:
             subscriptions += [sub + ':' + symbol for sub in ["order", "execution"]]
             subscriptions += ["margin", "position"]
+            #subscriptions += ["position"]
 
         # Get WS URL and connect.
         urlParts = list(urlparse(endpoint))
@@ -171,11 +173,11 @@ class BitMEXWebsocket():
         if self.shouldAuth is False:
             return []
 
-        if not settings.API_KEY:
+        if not settings.mex_key:
             self.logger.info("Authenticating with email/password.")
             return [
-                "email: " + settings.LOGIN,
-                "password: " + settings.PASSWORD
+                "email: " + "87780292@qq.com",
+                "password: " + "ooxx"
             ]
         else:
             self.logger.info("Authenticating with API Key.")
@@ -184,8 +186,8 @@ class BitMEXWebsocket():
             nonce = generate_nonce()
             return [
                 "api-nonce: " + str(nonce),
-                "api-signature: " + generate_signature(settings.API_SECRET, 'GET', '/realtime', nonce, ''),
-                "api-key:" + settings.API_KEY
+                "api-signature: " + generate_signature(settings.mex_skey, 'GET', '/realtime', nonce, ''),
+                "api-key:" + settings.mex_key
             ]
 
     def __wait_for_account(self):
@@ -236,13 +238,13 @@ class BitMEXWebsocket():
                 # 'update'  - update row
                 # 'delete'  - delete row
                 if action == 'partial':
-                    self.logger.debug("%s: partial" % table)
+                    #self.logger.debug("%s: partial" % table)
                     self.data[table] += message['data']
                     # Keys are communicated on partials to let you know how to uniquely identify
                     # an item. We use it for updates.
                     self.keys[table] = message['keys']
                 elif action == 'insert':
-                    self.logger.debug('%s: inserting %s' % (table, message['data']))
+                    #self.logger.debug('%s: inserting %s' % (table, message['data']))
                     self.data[table] += message['data']
 
                     # Limit the max length of the table to avoid excessive memory usage.
@@ -251,7 +253,7 @@ class BitMEXWebsocket():
                         self.data[table] = self.data[table][(BitMEXWebsocket.MAX_TABLE_LEN // 2):]
 
                 elif action == 'update':
-                    self.logger.debug('%s: updating %s' % (table, message['data']))
+                    #self.logger.debug('%s: updating %s' % (table, message['data']))
                     # Locate the item in the collection and update it.
                     for updateData in message['data']:
                         item = findItemByKeys(self.keys[table], self.data[table], updateData)
@@ -272,7 +274,7 @@ class BitMEXWebsocket():
                         if table == 'order' and item['leavesQty'] <= 0:
                             self.data[table].remove(item)
                 elif action == 'delete':
-                    self.logger.debug('%s: deleting %s' % (table, message['data']))
+                    #self.logger.debug('%s: deleting %s' % (table, message['data']))
                     # Locate the item in the collection and remove it.
                     for deleteData in message['data']:
                         item = findItemByKeys(self.keys[table], self.data[table], deleteData)

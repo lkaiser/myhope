@@ -32,6 +32,9 @@ ok_mex_price = "ok_mex_price"
 higher_split_position = coin_skey + "higher"
 lower_split_position = coin_skey + "lower"
 
+mexpush_higher_position = coin_skey + "higher_push"
+mexpush_lower_position = coin_skey + "lower_push"
+
 lower_sell_run_key = config.get("all", "lower_sell_run_key")
 lower_buy_run_key = config.get("all", "lower_buy_run_key")
 lower_main_run_key = config.get("all", "lower_main_run_key")

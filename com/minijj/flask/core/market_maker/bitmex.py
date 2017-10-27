@@ -9,6 +9,7 @@ import logging
 from market_maker.auth import AccessTokenAuth, APIKeyAuthWithExpires
 from market_maker.utils import constants, errors
 from retrying import retry
+from market_maker.ws.ws_thread import BitMEXWebsocket
 
 
 
@@ -35,6 +36,8 @@ class BitMEX(object):
         self.session.headers.update({'content-type': 'application/json'})
         self.session.headers.update({'accept': 'application/json'})
 
+        self.ws = BitMEXWebsocket()
+        self.ws.connect(base_url, symbol, shouldAuth=shouldWSAuth)
 
     def ticker_data(self, symbol):
         """Get ticker data."""

@@ -15,22 +15,11 @@ import constants as constants
 import sys
 
 
-LOG_FILE = sys.path[0] + '/high.log'
-handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 4, backupCount=10)  # 实例化handler
-fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
-
-formatter = logging.Formatter(fmt)  # 实例化formatter
-handler.setFormatter(formatter)  # 为handler添加formatter
-
 logger = logging.getLogger('root')  # 获取名为tst的logger
-logger.addHandler(handler)  # 为logger添加handler
-logger.setLevel(logging.DEBUG)
 
 
 class MarketPrice(object):
-    def __init__(self,okcoin):
-
-        self.okcoin = okcoin
+    def __init__(self):
         self.ws = websocket.WebSocket()
         self.q_asks_price = Queue.Queue(1)
         self.q_bids_price = Queue.Queue(1)
@@ -83,6 +72,7 @@ class MarketPrice(object):
                 while '"table":"orderBook10"' not in recv_data:
                     recv_data = self.ws.recv()
                 init_asks_price, init_bids_price = self.calc_mex_order_price(recv_data)
+                logger.info("mex_order_price updated")
                 self.mex_order_price(recv_data)
                 self.q_asks_price.put(init_asks_price)
                 self.q_bids_price.put(init_bids_price)
@@ -107,6 +97,7 @@ class MarketPrice(object):
                             recv_data)
                     self.mex_asks_price = new_init_asks_price
                     self.mex_bids_price = new_init_bids_price
+                    self.mex_order_price(recv_data)
 
                     diff_asks = new_init_asks_price - init_asks_price
 
@@ -134,7 +125,6 @@ class MarketPrice(object):
 
             except Exception, e:
                 logger.info(e)
-                #self.okcoin.cancel_all(self.contract_type)
                 self.init_ws()
 
     def ping_thread(self):

@@ -14,6 +14,7 @@ def import_path(fullpath):
     path, filename = os.path.split(fullpath)
     filename, ext = os.path.splitext(filename)
     sys.path.insert(0, path)
+    #print sys.path
     module = __import__(filename)
     reload(module)  # Might be out of date
     del sys.path[0]
@@ -29,12 +30,18 @@ if symbol:
     except Exception as e:
         print("Unable to find settings-%s.py." % symbol)
 
+
+constants = import_path(os.path.join('..', 'constants'))
+
 # Assemble settings.
 settings = {}
 settings.update(vars(baseSettings))
 settings.update(vars(userSettings))
 if symbolSettings:
     settings.update(vars(symbolSettings))
+
+#print vars(constants)
+settings.update(vars(constants))
 
 # Main export
 settings = dotdict(settings)
