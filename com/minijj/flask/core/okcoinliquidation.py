@@ -25,71 +25,83 @@ class okcoinLiquidation(object):
         slipp = 0
         while 1:
             trade_back = self.okcoin.tradeRival(constants.higher_contract_type, abs(self.mexpush.on_set["okqty"]), 2)
-            logger.info(trade_back)
             if not trade_back['result']:
-                trade_back = self.okcoin.cancel_orders(constants.higher_contract_type,[str(trade_back['order_id'])])
                 logger.info(trade_back)
-                if not trade_back['result']:
+                slipp += 2
+                time.sleep(2)
+                if slipp > 60:
                     break;
-                else:
-                    slipp += 2
-                    time.sleep(2)
-                    if slipp > 60:
-                        trade_back = None
-                        break;
             else:
                 break
         if slipp>60:
-            logger.error("########bad thing happen,order "+str(trade_back['order_id'])+" cannot open")
+            logger.error("########bad thing happen,cant liquid on okcoin,error_code = " + str(trade_back['error_code']))
             return
         time.sleep(0.5)
         order = self.okcoin.get_order_info(constants.higher_contract_type,[str(trade_back['order_id'])])
+        logger.info(order)
         exceedtime = 0
-        while order['orders'][0]['status'] !=1 and order['orders'][0]['status'] !=2:
+        while not order['result']:
+            logger.info(order)
             time.sleep(1)
             exceedtime += 1
             order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
             if exceedtime > 120:
-                logger.debug("########bad thing happen,watting so long for order " + str(trade_back['order_id']) + " to update statu")
-        logger.info(order)
+                logger.error("########bad thing happen,cant get liquid order info")
+                break
+
+        if order['result']:
+            exceedtime = 0
+            while order['orders'][0]['status'] !=1 and order['orders'][0]['status'] !=2:
+                time.sleep(1)
+                exceedtime += 1
+                order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
+                if exceedtime > 120:
+                    logger.error("########bad thing happen,liquid order status not right " + str(trade_back['order_id']) + " to update statu")
+                    break
+
         self.mexpush.recordSet(order['orders'][0])
         self.mexpush.on_set = None
-
 
     def highliquid(self):
         trade_back = None
         slipp = 0
         while 1:
             trade_back = self.okcoin.tradeRival(constants.higher_contract_type, abs(self.mexpush.on_liquid["okqty"]), 4)
-            logger.info(trade_back)
             if not trade_back['result']:
-                trade_back = self.okcoin.cancel_orders(constants.higher_contract_type,[str(trade_back['order_id'])])
                 logger.info(trade_back)
-                if not trade_back['result']:
+                slipp += 2
+                time.sleep(2)
+                if slipp > 60:
                     break;
-                else:
-                    slipp += 2
-                    time.sleep(2)
-                    if slipp > 60:
-                        trade_back = None
-                        break;
             else:
                 break;
         if slipp>60:
-            logging.error("########bad thing happen,order "+str(trade_back['order_id'])+" cannot liquid")
+            logger.error("########bad thing happen,cant liquid on okcoin,error_code = " + str(trade_back['error_code']))
             return
         time.sleep(0.5)
-        order = self.okcoin.get_order_info(constants.higher_contract_type,[str(trade_back['order_id'])])
+
+        order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
+        logger.info(order)
         exceedtime = 0
-        while order['orders'][0]['status'] !=1 and order['orders'][0]['status'] !=2:
+        while not order['result']:
+            logger.info(order)
             time.sleep(1)
             exceedtime += 1
             order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
             if exceedtime > 120:
-                logger.debug("########bad thing happen,watting so long for order " + str(trade_back['order_id']) + " to update statu")
-        logger.info(order)
-        self.mexpush.removeSet(order['orders'][0])
-        self.mexpush.on_liquid = None
+                logger.error("########bad thing happen,cant get liquid order info")
+                break
+
+        if order['result']:
+            exceedtime = 0
+            while order['orders'][0]['status'] !=1 and order['orders'][0]['status'] !=2:
+                time.sleep(1)
+                exceedtime += 1
+                order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
+                if exceedtime > 120:
+                    logger.debug("########bad thing happen,watting so long for order " + str(trade_back['order_id']) + " to update statu")
+            self.mexpush.removeSet(order['orders'][0])
+            self.mexpush.on_liquid = None
 
 
 
