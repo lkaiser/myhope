@@ -27,9 +27,9 @@ if __name__ == '__main__':
     while(input_s !="exit"):
         input_s = raw_input("what you want do\n")
         if input_s.find("showh") != -1:
-            print conn.get(skey+'higher')
+            print conn.get(skey+'higher_push')
         if input_s.find("showl") != -1:
-            print conn.get(skey+'lower')
+            print conn.get(skey+'lower_push')
         if input_s.find("inith") != -1:
             s = input_s[5:].split()
             for t in s:
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
             print hsplit_position
             hsplit_position.sort(key=lambda x: x[1])
-            conn.set(skey+'higher', hsplit_position)
+            conn.set(skey+'higher_push', hsplit_position)
         if input_s.find("initl") != -1:
             s = input_s[5:].split()
             for t in s:
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             print lsplit_position
             lsplit_position.sort(key=lambda x: x[1])
             lsplit_position.reverse()
-            conn.set(skey+'lower', lsplit_position)
+            conn.set(skey+'lower_push', lsplit_position)
     #print input_s
 
     print "Bye,Bye"

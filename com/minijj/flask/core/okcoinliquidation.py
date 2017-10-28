@@ -49,8 +49,8 @@ class okcoinLiquidation(object):
             time.sleep(1)
             exceedtime += 1
             order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
-            if exceedtime > 60:
-                logging.error("########bad thing happen,watting so long for order " + str(trade_back['order_id']) + " to update statu")
+            if exceedtime > 120:
+                logger.debug("########bad thing happen,watting so long for order " + str(trade_back['order_id']) + " to update statu")
         logger.info(order)
         self.mexpush.recordSet(order['orders'][0])
         self.mexpush.on_set = None
@@ -85,8 +85,8 @@ class okcoinLiquidation(object):
             time.sleep(1)
             exceedtime += 1
             order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
-            if exceedtime > 60:
-                logging.error("########bad thing happen,watting so long for order " + str(trade_back['order_id']) + " to update statu")
+            if exceedtime > 120:
+                logger.debug("########bad thing happen,watting so long for order " + str(trade_back['order_id']) + " to update statu")
         logger.info(order)
         self.mexpush.removeSet(order['orders'][0])
         self.mexpush.on_liquid = None

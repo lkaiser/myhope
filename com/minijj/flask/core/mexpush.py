@@ -44,6 +44,7 @@ class mexpush(object):
         #self.openedhigh = self.conn.get(constants.opened_high)
         #self.openedlow = self.conn.get(constants.opened_low)
         self.high_order = None
+        self.high_liquid_order = None
         self.low_order = None
         self.high_split_position = self.conn.get(constants.mexpush_higher_position)
         logger.info(self.high_split_position)
@@ -51,6 +52,7 @@ class mexpush(object):
             self.high_split_position = []
         self.on_set = None
         self.on_liquid = None
+        self.cur_liquid_diff = None
         self.balancelock = threading.Lock()
         mexpos = self.mex.position(constants.higher_mex_contract_type)
         okpos = self.okcoin.get_position(constants.higher_contract_type)['holding'][0]
@@ -58,7 +60,19 @@ class mexpush(object):
 
     def is_openhigh(self):
         #TODO 策略判断,比如差价过低，只做low
-        return self.openhigh
+        recent = self.conn.get("recent2")
+        opendiff = round(recent[0][4] - recent[0][1], 2)
+        if self.cur_liquid_diff is not None:
+            if opendiff - self.cur_liquid_diff > 1:
+                return True
+        else:
+            if self.high_split_position:
+                highest = self.high_split_position[len(self.high_split_position) - 1]
+                if opendiff > highest[1]:
+                    return True
+            else:#初始，默认建仓，TODO 考虑设置初始建仓条件
+                return True
+        return False
 
     def is_openlow(self):
         # TODO 策略判断 1有low挂单，挂单是否需要重新挂 2 均线趋势
@@ -69,9 +83,7 @@ class mexpush(object):
 
     def holdPosition(self):
         oldpos = self.mex.position(constants.higher_mex_contract_type).copy()
-        logger.debug("here holdPosition")
         while 1:
-            logger.debug("here holdPosition while")
             time.sleep(0.5)
             pos = self.mex.position(constants.higher_mex_contract_type).copy()
             logger.debug(pos['currentQty']-oldpos['currentQty'])
@@ -79,19 +91,21 @@ class mexpush(object):
                 okpos = self.okcoin.get_position(constants.higher_contract_type)['holding'][0]
                 okqty = round(pos['currentQty'] / 100.0, 2) - okpos['sell_amount']-self.init_high_diff
                 logger.debug("okqty="+str(okqty))
+                depth = self.market.get_depth_5_price()
                 if(okqty>0.5):
                     openqty = pos['currentQty']-oldpos['currentQty']
-                    openprice = round((abs(pos['avgCostPrice']*pos['currentQty'])-abs(oldpos['avgCostPrice']*oldpos['currentQty']))/openqty,2)
-                    self.on_set = {"settime":time.time(),"mexprice":openprice,"mexqty":openqty,"okqty":int(round(okqty,1))}
+                    #openprice = round((pos['avgCostPrice']*pos['currentQty']-oldpos['avgCostPrice']*oldpos['currentQty'])/openqty,2)
+                    self.on_set = {"settime":time.time(),"mexprice":depth[1][0][0],"mexqty":openqty,"okqty":int(round(okqty,1))}
                     self.liquidation.highopen()
             if pos['currentQty']-oldpos['currentQty'] <0:#okcoin四舍五入平仓
                 okpos = self.okcoin.get_position(constants.higher_contract_type)['holding'][0]
                 okqty = round(pos['currentQty'] / 100.0, 2) - okpos['sell_amount']-self.init_high_diff
                 logger.debug("okqty=" + str(okqty))
+                depth = self.market.get_depth_5_price()
                 if (okqty < -0.5):
                     openqty = pos['currentQty'] - oldpos['currentQty']
-                    openprice = round((abs(pos['avgCostPrice'] * pos['currentQty']) - abs(oldpos['avgCostPrice'] * oldpos['currentQty'])) / openqty, 2)
-                    self.on_liquid = {"settime": time.time(), "mexprice": openprice,"mexqty":openqty, "okqty": int(round(okqty,1))}
+                    #openprice = round((pos['avgCostPrice'] * pos['currentQty'] - oldpos['avgCostPrice'] * oldpos['currentQty']) / openqty, 2)
+                    self.on_liquid = {"settime": time.time(), "mexprice": depth[0][0][0],"mexqty":openqty, "okqty": int(round(okqty,1))}
                     self.liquidation.highliquid()
             oldpos = pos
 
@@ -111,7 +125,7 @@ class mexpush(object):
                     if self.high_split_position:
                         hold = sum(i[0] for i in self.high_split_position)
                     if not self.on_set:
-                        if abs(hold) < self.max_size * 100:
+                        if abs(hold) < self.max_size:
                             couldopen = True
                             if self.high_order:#已有挂单
                                 couldopen = False
@@ -126,6 +140,8 @@ class mexpush(object):
                                 depth = self.market.get_depth_5_price()
                                 self.high_order = self.mex.buy((abs(self.deal_amount) * 100), (depth[1][0][0]))
                         else:
+                            logger.debug("#########exceding max size")
+                            logger.debug(self.high_split_position)
                             if self.high_order:
                                 self.mex.cancel(self.high_order['orderID'])
                                 self.high_order = None
@@ -140,31 +156,39 @@ class mexpush(object):
         while 1:
             if self.high_split_position:
                 highest = self.high_split_position[len(self.high_split_position) - 1]
-                if highest[1] - self.get_cur_high_diff() < 2:
+                logger.debug("##########highest[1] - current diff ="+str(highest[1] - self.get_cur_high_diff()))
+                if self.high_liquid_order:
+                    if self.high_liquid_order['price'] < depth[1][0][0]:  # 当前挂单小于买1 默认成交
+                        self.high_liquid_order = None
+                if highest[1] - self.get_cur_high_diff() < 3: #差价小于3 取消平仓，防止滑点亏损
                     if self.high_liquid_order:
                         self.mex.cancel(self.high_liquid_order['orderID'])
                         self.high_liquid_order = None
-                    return
                 if highest[1] - self.get_cur_high_diff() > 5 and highest[1] - self.get_1min_high_diff() >4:
                     depth = self.market.get_depth_5_price()
                     if self.high_liquid_order:
-                        if self.high_liquid_order['price'] > depth[0][1][0]:#当前挂单小于卖2
+                        if self.high_liquid_order['price'] > depth[0][1][0]:#当前挂单大于卖2
                             self.mex.cancel(self.high_liquid_order['orderID'])
-                    self.high_liquid_order = self.mex.sell((abs(self.deal_amount) * 100), (depth[0][0][0]))
+                            self.high_liquid_order = self.mex.sell((abs(self.deal_amount) * 100), (depth[0][0][0]))
+                    else:
+                        self.high_liquid_order = self.mex.sell((abs(self.deal_amount) * 100), (depth[0][0][0]))
+            time.sleep(1)
 
     def get_cur_high_diff(self):
         recent = self.conn.get("recent2")
-        return round(recent[0][3]-recent[0][0],2)
+        recent.reverse()
+        return round(recent[0][3]-recent[0][2],2)
 
     def get_1min_high_diff(self):
         recent = self.conn.get("recent2")
-        p1 = sum(i[3] for i in recent[0,30])
-        p2 = sum(i[0] for i in recent[0, 30])
+        recent.reverse()
+        p1 = sum(i[3] for i in recent[0:30])
+        p2 = sum(i[2] for i in recent[0:30])
         return round((p1-p2)/30.0,2)
 
     def recordSet(self,order):
         if self.balancelock.acquire():
-            self.high_split_position.append((order["deal_amount"],order["price_avg"]-self.on_set["mexprice"]))
+            self.high_split_position.append((int(order["deal_amount"]),round(order["price_avg"]-self.on_set["mexprice"],2)))
             self.high_split_position.sort(key=lambda x: x[1])
             self.conn.set(constants.mexpush_higher_position,self.high_split_position)
             self.on_set = None
@@ -172,13 +196,13 @@ class mexpush(object):
             self.balancelock.release()
 
     def removeSet(self,order):
+        self.cur_liquid_diff = order["price_avg"] - self.on_liquid["mexprice"]
         ammount = order["deal_amount"]
         if self.balancelock.acquire():
             self.on_liquid = None
             while (self.high_split_position and ammount > 0):
                 last_pos = self.high_split_position.pop()
                 ammount = ammount - last_pos[0]
-                last_create = last_pos[1]
                 if (ammount < 0):
                     self.high_split_position.append((-ammount, last_pos[1]))
                     break
@@ -195,6 +219,9 @@ class mexpush(object):
         open = threading.Thread(target=self.openPosition)
         open.setDaemon(True)
         open.start()
+        liquid = threading.Thread(target=self.liquidPosition)
+        liquid.setDaemon(True)
+        liquid.start()
 
 
 if __name__ == '__main__':
