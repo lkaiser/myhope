@@ -20,11 +20,17 @@ class okcoinLiquidation(object):
         self.startime = datetime.datetime.now()
         self.conn = Conn_db()
 
-    def highopen(self):
+    def highopenOrlowliquid(self):
         trade_back = None
         slipp = 0
         while 1:
-            trade_back = self.okcoin.tradeRival(constants.higher_contract_type, abs(self.mexpush.on_set["okqty"]), 2)
+            if slipp<3:
+                trade_back = self.okcoin.tradeRival(constants.higher_contract_type, abs(self.mexpush.on_set["okqty"]), 2)
+            else:
+                recent = self.conn.get("recent2")
+                recent.reverse()
+                logger.info("okcoin high open at"+str(round(recent[0][4]-10,2)))
+                trade_back = self.okcoin.trade(constants.higher_contract_type,round(recent[0][4]-10,2), abs(self.mexpush.on_set["okqty"]), 2)
             if not trade_back['result']:
                 logger.info(trade_back)
                 slipp += 2
@@ -39,6 +45,7 @@ class okcoinLiquidation(object):
         time.sleep(0.5)
         order = self.okcoin.get_order_info(constants.higher_contract_type,[str(trade_back['order_id'])])
         logger.info(order)
+        logger.info(self.mexpush.on_set)
         exceedtime = 0
         while not order['result']:
             logger.info(order)
@@ -62,11 +69,17 @@ class okcoinLiquidation(object):
         self.mexpush.recordSet(order['orders'][0])
         self.mexpush.on_set = None
 
-    def highliquid(self):
+    def highliquidOrlowopen(self):
         trade_back = None
         slipp = 0
         while 1:
-            trade_back = self.okcoin.tradeRival(constants.higher_contract_type, abs(self.mexpush.on_liquid["okqty"]), 4)
+            if slipp < 3:
+                trade_back = self.okcoin.tradeRival(constants.higher_contract_type, abs(self.mexpush.on_liquid["okqty"]), 4)
+            else:
+                recent = self.conn.get("recent2")
+                recent.reverse()
+                logger.info("okcoin high open at" + str(round(recent[0][3]+10,2)))
+                trade_back = self.okcoin.trade(constants.higher_contract_type,round(recent[0][3]+10,2), abs(self.mexpush.on_set["okqty"]), 4)
             if not trade_back['result']:
                 logger.info(trade_back)
                 slipp += 2
@@ -82,6 +95,7 @@ class okcoinLiquidation(object):
 
         order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])
         logger.info(order)
+        logger.info(self.mexpush.on_liquid)
         exceedtime = 0
         while not order['result']:
             logger.info(order)
@@ -94,7 +108,7 @@ class okcoinLiquidation(object):
 
         if order['result']:
             exceedtime = 0
-            while order['orders'][0]['status'] !=1 and order['orders'][0]['status'] !=2:
+            while (not order['result']) or (order['orders'][0]['status'] !=1 and order['orders'][0]['status'] !=2):
                 time.sleep(1)
                 exceedtime += 1
                 order = self.okcoin.get_order_info(constants.higher_contract_type, [str(trade_back['order_id'])])

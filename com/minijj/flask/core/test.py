@@ -86,18 +86,18 @@ if __name__ == '__main__':
 
 
 
-   print True
-   print datetime.datetime.utcnow()
-   timenow = (datetime.datetime.utcnow() + datetime.timedelta(hours=8))
-   print timenow
-
-   redis = rediscon.Conn_db()
-   #skey = constants.coin_skey
-   ps = redis.get(constants.lower_split_position)
-   amount = 0
-   for x in ps:
-       amount += x[0]
-   print "############amount=",amount
+   # print True
+   # print datetime.datetime.utcnow()
+   # timenow = (datetime.datetime.utcnow() + datetime.timedelta(hours=8))
+   # print timenow
+   #
+   # redis = rediscon.Conn_db()
+   # #skey = constants.coin_skey
+   # ps = redis.get(constants.lower_split_position)
+   # amount = 0
+   # for x in ps:
+   #     amount += x[0]
+   # print "############amount=",amount
    #okcoin = okcom.OkCoinComApi(constants.coin_key, constants.coin_skey)
    # print "########here"
    #print okcoin.get_userinfo()
