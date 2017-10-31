@@ -72,21 +72,18 @@ class mexpush(object):
             recent = self.conn.get("recent2")
             recent.reverse()
             opendiff = round(recent[0][4] - recent[0][1], 2)
+
             if self.cur_liquid_diff is not None:
                 logger.debug("opendiff = "+str(opendiff) +" cur_liquid_diff = "+str(self.cur_liquid_diff))
                 if opendiff - self.cur_liquid_diff > self.profit+5:
                     return True
             else:
-                if self.high_split_position:
-                    highest = self.high_split_position[len(self.high_split_position) - 1]
-                    logger.debug("opendiff = " + str(opendiff) + " highest[1] = " + str(highest[1]))
-                    if opendiff > highest[1]+0.3:
-                        return True
-                else:#初始，默认建仓，TODO 考虑设置初始建仓条件
-                    if opendiff >  self.basis_create:
-                        return True
-                    else:
-                        return False
+                if opendiff > self.basis_create:
+                    if self.high_split_position:
+                        highest = self.high_split_position[len(self.high_split_position) - 1]
+                        logger.debug("opendiff = " + str(opendiff) + " highest[1] = " + str(highest[1]))
+                        if opendiff > highest[1]+0.3:
+                            return True
         return False
 
     def is_openlow(self):
@@ -95,19 +92,20 @@ class mexpush(object):
             recent = self.conn.get("recent2")
             recent.reverse()
             opendiff = round(recent[0][3] - recent[0][2], 2)
-            if self.cur_liquid_diff is not None:
-                if opendiff - self.cur_liquid_diff < -(self.profit+5):
-                    return True
-            else:
-                if self.low_split_position:
-                    lowest = self.low_split_position[len(self.low_split_position) - 1]
-                    if opendiff < lowest[1]-0.3:
+            if opendiff < self.basis_create:
+                if self.cur_liquid_diff is not None:
+                    if opendiff - self.cur_liquid_diff < -(self.profit+5):
                         return True
-                else:  # 初始，默认建仓，TODO 考虑设置初始建仓条件
-                    if opendiff < self.basis_create:
-                        return True
-                    else:
-                        return False
+                else:
+                    if self.low_split_position:
+                        lowest = self.low_split_position[len(self.low_split_position) - 1]
+                        if opendiff < lowest[1]-0.3:
+                            return True
+                    else:  # 初始，默认建仓，TODO 考虑设置初始建仓条件
+                        if opendiff < self.basis_create:
+                            return True
+                        else:
+                            return False
         return False
 
     def high_price(self,depth):
@@ -292,7 +290,9 @@ class mexpush(object):
 
     def recordSet(self,order):
         if self.balancelock.acquire():
+            his = self.conn.get(constants.mexpush_trade_his_key)
             if self.openhigh:
+                his.append(((datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')),self.on_set['mexqty'],order["deal_amount"],round(order["price_avg"]-self.on_set["mexprice"],2),1))
                 self.high_split_position.append((int(order["deal_amount"]),round(order["price_avg"]-self.on_set["mexprice"],2)))
                 self.high_split_position.sort(key=lambda x: x[1])
                 self.conn.set(constants.mexpush_higher_position,self.high_split_position)
@@ -300,6 +300,7 @@ class mexpush(object):
                 logger.info(self.conn.get(constants.mexpush_higher_position))
             if self.openlow:
                 self.cur_liquid_diff = order["price_avg"] - self.on_set["mexprice"]
+                his.append(((datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')),self.on_set['mexqty'], order["deal_amount"],round(order["price_avg"]-self.on_set["mexprice"],2),4))
                 ammount = order["deal_amount"]
                 if self.balancelock.acquire():
                     self.on_set = None
@@ -312,14 +313,16 @@ class mexpush(object):
                     if ammount > 0:
                         print "what? sell too much"
                     self.conn.set(constants.mexpush_lower_position, self.low_split_position)
+            self.conn.set(constants.mexpush_trade_his_key, his)
             self.balancelock.release()
 
     def removeSet(self,order):
         if self.balancelock.acquire():
+            his = self.conn.get(constants.mexpush_trade_his_key)
             if self.openhigh:
+                his.append(((datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')), self.on_liquid['mexqty'], order["deal_amount"], round(order["price_avg"] - self.on_liquid["mexprice"], 2), 2))
                 self.cur_liquid_diff = order["price_avg"] - self.on_liquid["mexprice"]
                 ammount = order["deal_amount"]
-
                 self.on_liquid = None
                 while (self.high_split_position and ammount > 0):
                     last_pos = self.high_split_position.pop()
@@ -331,12 +334,14 @@ class mexpush(object):
                     print "what? sell too much"
                 self.conn.set(constants.mexpush_higher_position,self.high_split_position)
             if self.openlow:
+                his.append(((datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')),self.on_liquid['mexqty'], order["deal_amount"], round(order["price_avg"] - self.on_liquid["mexprice"], 2), 3))
                 self.low_split_position.append((int(order["deal_amount"]), round(order["price_avg"] - self.on_liquid["mexprice"], 2)))
                 self.low_split_position.sort(key=lambda x: x[1])
                 self.low_split_position.reverse()
                 self.conn.set(constants.mexpush_lower_position, self.low_split_position)
                 self.on_liquid = None
                 logger.info(self.conn.get(constants.mexpush_lower_position))
+            self.conn.set(constants.mexpush_trade_his_key, his)
         self.balancelock.release()
 
 
@@ -353,7 +358,7 @@ class mexpush(object):
 
 
 if __name__ == '__main__':
-    push = mexpush(5,1,'low',50,5)
+    push = mexpush(20,1,'high',190,8)
     push.start()
 
     while 1:

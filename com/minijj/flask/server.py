@@ -117,7 +117,11 @@ def admin():
     sell2 = redis.get(constants.higher_buy_run_key)
     server2 = redis.get(constants.higher_server)
 
-    ok_holding = okcoin.get_position(constants.higher_contract_type)['holding'][0]
+    ok_holding = okcoin.get_position(constants.higher_contract_type)
+    if ok_holding and ok_holding.has_key('holding'):
+        ok_holding = ok_holding['holding'][0]
+    else:
+        ok_holding = []
     # if ok_holding:
     #     ok_holding = ok_holding
     #ok_holding = []

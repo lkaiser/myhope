@@ -18,6 +18,7 @@ mex_skey = config.get("all", "mex_skey")
 password = config.get("all", "password")
 
 trade_his_key = config.get("all", "trade_his_key")
+mexpush_trade_his_key = config.get("all", "mexpush_trade_his_key")
 
 trade_server = "trade_server"
 higher_server = "higher_server"

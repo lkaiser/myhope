@@ -75,6 +75,9 @@ if __name__ == '__main__':
             lsplit_position.sort(key=lambda x: x[1])
             lsplit_position.reverse()
             conn.set(skey+'lower_push', lsplit_position)
+        if input_s.find("his") != -1:
+            his = conn.get(constants.mexpush_trade_his_key)
+            print his
     #print input_s
 
     print "Bye,Bye"

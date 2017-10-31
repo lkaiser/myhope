@@ -81,14 +81,18 @@ class Diff(object):
         try:
             self.ws_ok.close()
             self.ws_ok.connect("wss://real.okex.com:10440/websocket/okcoinapi")
-            # this_week = {'event': 'addChannel',
-            #              'channel': 'ok_sub_futureusd_btc_depth_this_week_60'}
-            # next_week = {'event': 'addChannel',
-            #              'channel': 'ok_sub_futureusd_btc_depth_next_week_60'}
+            this_week = {'event': 'addChannel',
+                         'channel': 'ok_sub_futureusd_btc_depth_this_week_60'}
+            next_week = {'event': 'addChannel',
+                         'channel': 'ok_sub_futureusd_btc_depth_next_week_60'}
             quarter = {'event': 'addChannel',
                        'channel': 'ok_sub_futureusd_btc_depth_quarter_60'}
             # contract = [this_week, next_week, quarter]
             contract = [quarter]
+            if constants.higher_contract_type == "this_week":
+                contract = [this_week]
+            if constants.higher_contract_type == "next_week":
+                contract = [next_week]
             self.ws_ok.settimeout = 6
 
             for c in contract:
@@ -177,8 +181,8 @@ class Diff(object):
                     ws_data = json.loads(recv_data)
                     if 'result' not in ws_data[0]['data']:
                         ws_data = ws_data[0]
-                        #print ws_data
-                        if ws_data['channel'] == 'ok_sub_futureusd_btc_depth_quarter_60':
+                        channel = "ok_sub_futureusd_btc_depth_"+constants.higher_contract_type+"_60"
+                        if ws_data['channel'] == channel:
                             l = ws_data['data']['bids']
                             #print "bids",l[0]
                             k = []
