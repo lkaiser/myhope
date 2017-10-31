@@ -92,20 +92,16 @@ class mexpush(object):
             recent = self.conn.get("recent2")
             recent.reverse()
             opendiff = round(recent[0][3] - recent[0][2], 2)
-            if opendiff < self.basis_create:
-                if self.cur_liquid_diff is not None:
-                    if opendiff - self.cur_liquid_diff < -(self.profit+5):
-                        return True
-                else:
+            #if opendiff < self.basis_create:
+            if self.cur_liquid_diff is not None:
+                if opendiff - self.cur_liquid_diff < -(self.profit+5):
+                    return True
+            else:
+                if opendiff < self.basis_create:
                     if self.low_split_position:
                         lowest = self.low_split_position[len(self.low_split_position) - 1]
                         if opendiff < lowest[1]-0.3:
                             return True
-                    else:  # 初始，默认建仓，TODO 考虑设置初始建仓条件
-                        if opendiff < self.basis_create:
-                            return True
-                        else:
-                            return False
         return False
 
     def high_price(self,depth):
