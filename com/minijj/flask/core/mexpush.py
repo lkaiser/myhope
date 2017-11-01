@@ -24,9 +24,10 @@ logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
 
 class mexpush(object):
-    def __init__(self,max_size,deal_amount,high_or_low,basis_create,profit):
+    def __init__(self,max_size,deal_amount,high_or_low,basis_create,profit,density):
         self.basis_create = basis_create
         self.profit = profit
+        self.density = density
         self.conn = Conn_db()
         mex_key = constants.mex_key
         mex_skey = constants.mex_skey
@@ -69,21 +70,27 @@ class mexpush(object):
     def is_openhigh(self):
         #TODO 策略判断,比如差价过低，只做low
         if self.openhigh:
+
             recent = self.conn.get("recent2")
             recent.reverse()
             opendiff = round(recent[0][4] - recent[0][1], 2)
-
-            if self.cur_liquid_diff is not None:
-                logger.debug("opendiff = "+str(opendiff) +" cur_liquid_diff = "+str(self.cur_liquid_diff))
-                if opendiff - self.cur_liquid_diff > self.profit+5:
-                    return True
-            else:
-                if opendiff > self.basis_create:
-                    if self.high_split_position:
-                        highest = self.high_split_position[len(self.high_split_position) - 1]
-                        logger.debug("opendiff = " + str(opendiff) + " highest[1] = " + str(highest[1]))
-                        if opendiff > highest[1]+0.3:
-                            return True
+            curhold = 0.01
+            start = self.basis_create
+            if self.high_split_position:
+                curhold = sum(i[0] for i in self.high_split_position)
+                start = self.high_split_position[0][1]
+            if ((opendiff - start) / curhold) > self.density:
+                if self.cur_liquid_diff is not None:
+                    logger.debug("opendiff = "+str(opendiff) +" cur_liquid_diff = "+str(self.cur_liquid_diff))
+                    if opendiff - self.cur_liquid_diff > self.profit+5:
+                        return True
+                else:
+                    if opendiff > self.basis_create:
+                        if self.high_split_position:
+                            highest = self.high_split_position[len(self.high_split_position) - 1]
+                            logger.debug("opendiff = " + str(opendiff) + " highest[1] = " + str(highest[1]))
+                            if opendiff > highest[1]+0.3:
+                                return True
         return False
 
     def is_openlow(self):
@@ -354,7 +361,7 @@ class mexpush(object):
 
 
 if __name__ == '__main__':
-    push = mexpush(20,1,'high',190,8)
+    push = mexpush(24,1,'high',50,8,7)
     push.start()
 
     while 1:
