@@ -91,6 +91,8 @@ class mexpush(object):
                             logger.debug("opendiff = " + str(opendiff) + " highest[1] = " + str(highest[1]))
                             if opendiff > highest[1]+0.3:
                                 return True
+            else:
+                logger.debug("###############density not fill##############")
         return False
 
     def is_openlow(self):
