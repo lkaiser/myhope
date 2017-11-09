@@ -87,6 +87,8 @@ class mexpush(object):
                     logger.debug("opendiff = "+str(opendiff) +" cur_liquid_diff = "+str(self.cur_liquid_diff))
                     if opendiff - self.cur_liquid_diff > self.profit+5:
                         return True
+                    else:
+                        logger.debug("I'm not open")
                 else:
                     if opendiff > self.basis_create:
                         if self.high_split_position:
@@ -94,8 +96,10 @@ class mexpush(object):
                             logger.debug("opendiff = " + str(opendiff) + " highest[1] = " + str(highest[1]))
                             if opendiff > highest[1]+0.3:
                                 return True
+                            else:
+                                logger.debug("I'm not open")
             else:
-                logger.debug("###############density not fill##############")
+                logger.debug("###############density not fullfill##############")
         return False
 
     def is_openlow(self):
@@ -177,8 +181,9 @@ class mexpush(object):
                                 logger.debug(self.high_order)
                                 if self.high_order['price'] < depth[1][1][0] or self.high_order['price'] > depth[0][0][0]:#当前挂单小于买2撤单重新提交;大于卖一 默认已成交
                                     if self.high_order['price'] > depth[0][0][0]:
-                                        if time.time() - self.detected_time  > 5.0:
+                                        if time.time() - self.detected_time  > 15.0:
                                             self.openevent.clear()
+                                            logger.debug("open sleeped")
                                             self.openevent.wait() #啥也别说了，停,直到有人能唤醒你
                                     logger.debug("open price = "+str(self.high_order['price'])+"买2 ="+str(depth[1][1][0]) +" 卖1 ="+str(depth[0][0][0]))
                                     self.mex.cancel(self.high_order['orderID'])
@@ -247,8 +252,9 @@ class mexpush(object):
                 if self.high_liquid_order:
                     depth = self.market.get_depth_5_price()
                     if self.high_liquid_order['price'] < depth[1][0][0]:  # 当前挂单小于买1 默认成交
-                        if time.time() - self.detected_time > 5.0:
+                        if time.time() - self.detected_time > 15.0:
                             self.liquidevent.clear()
+                            logger.debug("liquid sleeped")
                             self.liquidevent.wait()  # 啥也别说了，停,直到有人能唤醒你
                         self.high_liquid_order = None
                 if highest[1] - self.get_cur_high_diff() < 3: #差价小于3 取消平仓，防止滑点亏损
@@ -379,7 +385,7 @@ class mexpush(object):
 
 
 if __name__ == '__main__':
-    push = mexpush(28,1,'high',50,9,7)
+    push = mexpush(28,1,'high',-40,9,7)
     push.start()
 
     while 1:
